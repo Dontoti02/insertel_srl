@@ -1,0 +1,17 @@
+{
+    "name": "insertel/inventory-system",
+    "description": "Sistema de Gestión de Inventario - INSERTEL S.R.L.",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "phpoffice/phpspreadsheet": "^1.29"
+    },
+    "autoload": {
+        "psr-4": {
+            "Insertel\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

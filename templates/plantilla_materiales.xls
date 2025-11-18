@@ -1,0 +1,79 @@
+
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th { background-color: #4472C4; color: white; font-weight: bold; padding: 8px; border: 1px solid #000; }
+        td { padding: 8px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <th>codigo</th>
+            <th>nombre</th>
+            <th>descripcion</th>
+            <th>categoria_id</th>
+            <th>categoria_nombre</th>
+            <th>unidad</th>
+            <th>stock_actual</th>
+            <th>stock_minimo</th>
+            <th>costo_unitario</th>
+            <th>precio_unitario</th>
+            <th>proveedor_id</th>
+            <th>proveedor_nombre</th>
+            <th>ubicacion</th>
+            <th>estado</th>
+        </tr>
+        <tr>
+            <td>MAT-001</td>
+            <td>Cable UTP Cat 6</td>
+            <td>Cable de red categoria 6</td>
+            <td>1</td>
+            <td>Cables</td>
+            <td>metro</td>
+            <td>100</td>
+            <td>10</td>
+            <td>2.50</td>
+            <td>3.00</td>
+            <td>1</td>
+            <td>Proveedor ABC</td>
+            <td>Almacen Principal</td>
+            <td>activo</td>
+        </tr>
+        <tr>
+            <td>MAT-002</td>
+            <td>Conector RJ45</td>
+            <td>Conector para cable UTP</td>
+            <td>2</td>
+            <td>Conectores</td>
+            <td>unidad</td>
+            <td>200</td>
+            <td>20</td>
+            <td>0.75</td>
+            <td>1.00</td>
+            <td>2</td>
+            <td>Proveedor XYZ</td>
+            <td>Almacen Principal</td>
+            <td>activo</td>
+        </tr>
+        <tr>
+            <td>MAT-003</td>
+            <td>Switch 24 puertos</td>
+            <td>Switch administrable 24 puertos</td>
+            <td>3</td>
+            <td>Equipos</td>
+            <td>unidad</td>
+            <td>5</td>
+            <td>2</td>
+            <td>450.00</td>
+            <td>550.00</td>
+            <td>1</td>
+            <td>Proveedor ABC</td>
+            <td>Almacen Equipos</td>
+            <td>activo</td>
+        </tr>
+    </table>
+</body>
+</html>

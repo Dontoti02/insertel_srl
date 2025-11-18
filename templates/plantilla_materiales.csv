@@ -1,0 +1,6 @@
+codigo,nombre,descripcion,categoria_id,categoria_nombre,unidad,stock_actual,stock_minimo,costo_unitario,proveedor_id,proveedor_nombre,ubicacion,estado
+MAT001,Cable UTP Cat6,Cable de red categoria 6 para instalaciones,1,Cables,metros,100,10,2.50,1,Proveedor ABC,Almacen A1,activo
+MAT002,Conector RJ45,Conector para cable UTP categoria 6,2,Conectores,unidades,500,50,0.75,1,Proveedor ABC,Almacen A2,activo
+MAT003,Taladro Percutor,Taladro electrico para perforacion,3,Herramientas,unidades,5,2,150.00,2,Herramientas XYZ,Almacen B1,activo
+MAT004,Router WiFi,Equipo de red inalambrico,4,Equipos,unidades,20,5,89.99,3,Tech Solutions,Almacen C1,activo
+MAT005,Interruptor Simple,Interruptor electrico de una via,5,Materiales Electricos,unidades,200,20,3.25,4,Electricos DEF,Almacen A3,activo
