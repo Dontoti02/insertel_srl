@@ -3,11 +3,20 @@ if (!estaAutenticado()) {
     redirigir('auth/login.php');
 }
 
+// Sincronizar datos de sesión con la base de datos
+sincronizarDatosSesion();
+
+// Si se marcó para cerrar sesión (usuario desactivado), cerrar ahora
+if (isset($_SESSION['debe_cerrar_sesion']) && $_SESSION['debe_cerrar_sesion']) {
+    cerrarSesion();
+}
+
 $mensaje = getMensaje();
 $nombre_empresa = obtenerNombreEmpresa();
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,7 +37,7 @@ $nombre_empresa = obtenerNombreEmpresa();
             --koamaru-800: #0718d0;
             --koamaru-900: #0816aa;
             --koamaru-950: #01107e;
-            
+
             /* Sistema de colores basado en Deep Koamaru */
             --color-primary: var(--koamaru-600);
             --color-primary-light: var(--koamaru-400);
@@ -43,9 +52,9 @@ $nombre_empresa = obtenerNombreEmpresa();
             --color-purple: var(--koamaru-700);
             --color-accent: var(--koamaru-400);
             --color-muted: var(--koamaru-200);
-            
+
             --sidebar-width: 260px;
-            
+
             /* Gradientes con Deep Koamaru */
             --gradient-primary: linear-gradient(135deg, var(--koamaru-600) 0%, var(--koamaru-800) 100%);
             --gradient-secondary: linear-gradient(135deg, var(--koamaru-300) 0%, var(--koamaru-500) 100%);
@@ -318,37 +327,44 @@ $nombre_empresa = obtenerNombreEmpresa();
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        .stat-card .icon.blue { 
-            background: var(--gradient-primary); 
-            color: white; 
+        .stat-card .icon.blue {
+            background: var(--gradient-primary);
+            color: white;
         }
-        .stat-card .icon.green { 
-            background: var(--gradient-success); 
-            color: white; 
+
+        .stat-card .icon.green {
+            background: var(--gradient-success);
+            color: white;
         }
-        .stat-card .icon.orange { 
-            background: var(--gradient-warning); 
-            color: white; 
+
+        .stat-card .icon.orange {
+            background: var(--gradient-warning);
+            color: white;
         }
-        .stat-card .icon.red { 
-            background: var(--gradient-danger); 
-            color: white; 
+
+        .stat-card .icon.red {
+            background: var(--gradient-danger);
+            color: white;
         }
-        .stat-card .icon.purple { 
-            background: linear-gradient(135deg, var(--koamaru-700) 0%, var(--koamaru-500) 100%); 
-            color: white; 
+
+        .stat-card .icon.purple {
+            background: linear-gradient(135deg, var(--koamaru-700) 0%, var(--koamaru-500) 100%);
+            color: white;
         }
-        .stat-card .icon.teal { 
-            background: var(--gradient-secondary); 
-            color: white; 
+
+        .stat-card .icon.teal {
+            background: var(--gradient-secondary);
+            color: white;
         }
-        .stat-card .icon.koamaru { 
-            background: linear-gradient(135deg, var(--koamaru-400) 0%, var(--koamaru-600) 100%); 
-            color: white; 
+
+        .stat-card .icon.koamaru {
+            background: linear-gradient(135deg, var(--koamaru-400) 0%, var(--koamaru-600) 100%);
+            color: white;
         }
-        .stat-card .icon.koamaru-light { 
-            background: linear-gradient(135deg, var(--koamaru-300) 0%, var(--koamaru-500) 100%); 
-            color: white; 
+
+        .stat-card .icon.koamaru-light {
+            background: linear-gradient(135deg, var(--koamaru-300) 0%, var(--koamaru-500) 100%);
+            color: white;
         }
 
         .stat-card h3 {
@@ -704,39 +720,122 @@ $nombre_empresa = obtenerNombreEmpresa();
         }
 
         /* Clases específicas Deep Koamaru */
-        .bg-koamaru-50 { background-color: var(--koamaru-50) !important; }
-        .bg-koamaru-100 { background-color: var(--koamaru-100) !important; }
-        .bg-koamaru-200 { background-color: var(--koamaru-200) !important; }
-        .bg-koamaru-300 { background-color: var(--koamaru-300) !important; }
-        .bg-koamaru-400 { background-color: var(--koamaru-400) !important; }
-        .bg-koamaru-500 { background-color: var(--koamaru-500) !important; }
-        .bg-koamaru-600 { background-color: var(--koamaru-600) !important; }
-        .bg-koamaru-700 { background-color: var(--koamaru-700) !important; }
-        .bg-koamaru-800 { background-color: var(--koamaru-800) !important; }
-        .bg-koamaru-900 { background-color: var(--koamaru-900) !important; }
-        .bg-koamaru-950 { background-color: var(--koamaru-950) !important; }
+        .bg-koamaru-50 {
+            background-color: var(--koamaru-50) !important;
+        }
 
-        .text-koamaru-50 { color: var(--koamaru-50) !important; }
-        .text-koamaru-100 { color: var(--koamaru-100) !important; }
-        .text-koamaru-200 { color: var(--koamaru-200) !important; }
-        .text-koamaru-300 { color: var(--koamaru-300) !important; }
-        .text-koamaru-400 { color: var(--koamaru-400) !important; }
-        .text-koamaru-500 { color: var(--koamaru-500) !important; }
-        .text-koamaru-600 { color: var(--koamaru-600) !important; }
-        .text-koamaru-700 { color: var(--koamaru-700) !important; }
-        .text-koamaru-800 { color: var(--koamaru-800) !important; }
-        .text-koamaru-900 { color: var(--koamaru-900) !important; }
-        .text-koamaru-950 { color: var(--koamaru-950) !important; }
+        .bg-koamaru-100 {
+            background-color: var(--koamaru-100) !important;
+        }
 
-        .border-koamaru-300 { border-color: var(--koamaru-300) !important; }
-        .border-koamaru-400 { border-color: var(--koamaru-400) !important; }
-        .border-koamaru-500 { border-color: var(--koamaru-500) !important; }
-        .border-koamaru-600 { border-color: var(--koamaru-600) !important; }
+        .bg-koamaru-200 {
+            background-color: var(--koamaru-200) !important;
+        }
+
+        .bg-koamaru-300 {
+            background-color: var(--koamaru-300) !important;
+        }
+
+        .bg-koamaru-400 {
+            background-color: var(--koamaru-400) !important;
+        }
+
+        .bg-koamaru-500 {
+            background-color: var(--koamaru-500) !important;
+        }
+
+        .bg-koamaru-600 {
+            background-color: var(--koamaru-600) !important;
+        }
+
+        .bg-koamaru-700 {
+            background-color: var(--koamaru-700) !important;
+        }
+
+        .bg-koamaru-800 {
+            background-color: var(--koamaru-800) !important;
+        }
+
+        .bg-koamaru-900 {
+            background-color: var(--koamaru-900) !important;
+        }
+
+        .bg-koamaru-950 {
+            background-color: var(--koamaru-950) !important;
+        }
+
+        .text-koamaru-50 {
+            color: var(--koamaru-50) !important;
+        }
+
+        .text-koamaru-100 {
+            color: var(--koamaru-100) !important;
+        }
+
+        .text-koamaru-200 {
+            color: var(--koamaru-200) !important;
+        }
+
+        .text-koamaru-300 {
+            color: var(--koamaru-300) !important;
+        }
+
+        .text-koamaru-400 {
+            color: var(--koamaru-400) !important;
+        }
+
+        .text-koamaru-500 {
+            color: var(--koamaru-500) !important;
+        }
+
+        .text-koamaru-600 {
+            color: var(--koamaru-600) !important;
+        }
+
+        .text-koamaru-700 {
+            color: var(--koamaru-700) !important;
+        }
+
+        .text-koamaru-800 {
+            color: var(--koamaru-800) !important;
+        }
+
+        .text-koamaru-900 {
+            color: var(--koamaru-900) !important;
+        }
+
+        .text-koamaru-950 {
+            color: var(--koamaru-950) !important;
+        }
+
+        .border-koamaru-300 {
+            border-color: var(--koamaru-300) !important;
+        }
+
+        .border-koamaru-400 {
+            border-color: var(--koamaru-400) !important;
+        }
+
+        .border-koamaru-500 {
+            border-color: var(--koamaru-500) !important;
+        }
+
+        .border-koamaru-600 {
+            border-color: var(--koamaru-600) !important;
+        }
 
         /* Gradientes adicionales */
-        .bg-gradient-koamaru { background: var(--gradient-primary) !important; }
-        .bg-gradient-koamaru-light { background: var(--gradient-secondary) !important; }
-        .bg-gradient-koamaru-accent { background: var(--gradient-accent) !important; }
+        .bg-gradient-koamaru {
+            background: var(--gradient-primary) !important;
+        }
+
+        .bg-gradient-koamaru-light {
+            background: var(--gradient-secondary) !important;
+        }
+
+        .bg-gradient-koamaru-accent {
+            background: var(--gradient-accent) !important;
+        }
 
         /* Badges personalizados para estados de materiales */
         .badge.bg-success.badge-activo-override {
@@ -797,22 +896,45 @@ $nombre_empresa = obtenerNombreEmpresa();
         }
     </style>
 </head>
+
 <body>
     <!-- Toast Container for Alerts -->
     <div class="toast-container">
         <?php if ($mensaje): ?>
-        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header bg-<?php echo $mensaje['tipo']; ?> text-white">
-                <i class="bi bi-<?php echo $mensaje['tipo'] == 'success' ? 'check-circle' : 'exclamation-triangle'; ?> me-2"></i>
-                <strong class="me-auto">Notificación</strong>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header bg-<?php echo $mensaje['tipo']; ?> text-white">
+                    <i class="bi bi-<?php echo $mensaje['tipo'] == 'success' ? 'check-circle' : 'exclamation-triangle'; ?> me-2"></i>
+                    <strong class="me-auto">Notificación</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">
+                    <?php echo $mensaje['texto']; ?>
+                </div>
             </div>
-            <div class="toast-body">
-                <?php echo $mensaje['texto']; ?>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['datos_actualizados']) && $_SESSION['datos_actualizados']): ?>
+            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+                <div class="toast-header bg-primary text-white">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong class="me-auto">Actualización de Datos</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">
+                    <strong>¡Atención!</strong> Tus datos de sesión han sido actualizados por el administrador del sistema.
+                    <?php if (isset($_SESSION['sede_nombre'])): ?>
+                        <br><small class="text-muted">Sede actual: <strong><?php echo $_SESSION['sede_nombre']; ?></strong></small>
+                    <?php endif; ?>
+                    <br><small class="text-muted">Por favor, verifica que todo esté correcto.</small>
+                </div>
             </div>
-        </div>
+            <?php
+            // Limpiar la bandera después de mostrarla
+            unset($_SESSION['datos_actualizados']);
+            ?>
         <?php endif; ?>
     </div>
+
 
     <!-- Sidebar -->
     <div class="sidebar">
@@ -826,7 +948,7 @@ $nombre_empresa = obtenerNombreEmpresa();
             <?php
             $base_url = BASE_URL . 'views/';
             $current_page = basename($_SERVER['PHP_SELF']);
-            
+
             // Menú según rol
             if (tieneRol(ROL_SUPERADMIN)) {
                 include 'menu_superadmin.php';
@@ -857,19 +979,19 @@ $nombre_empresa = obtenerNombreEmpresa();
             <div class="user-info">
                 <!-- Alertas de Stock Bajo -->
                 <?php include __DIR__ . '/../../components/alertas_stock.php'; ?>
-                
+
                 <div class="dropdown">
                     <div class="d-flex align-items-center cursor-pointer" data-bs-toggle="dropdown" aria-expanded="false">
                         <div class="user-details me-3">
                             <div class="user-name"><?php echo $_SESSION['nombre_completo']; ?></div>
                             <div class="user-role"><?php echo $_SESSION['rol_nombre']; ?></div>
                             <?php if (!tieneRol(ROL_SUPERADMIN) && isset($_SESSION['sede_nombre'])): ?>
-                            <div class="text-muted" style="font-size: 12px;">
-                                Sede: <strong><?php echo $_SESSION['sede_nombre']; ?></strong>
-                                <?php if (!empty($_SESSION['sede_codigo'])): ?>
-                                    (<code><?php echo $_SESSION['sede_codigo']; ?></code>)
-                                <?php endif; ?>
-                            </div>
+                                <div class="text-muted" style="font-size: 12px;">
+                                    Sede: <strong><?php echo $_SESSION['sede_nombre']; ?></strong>
+                                    <?php if (!empty($_SESSION['sede_codigo'])): ?>
+                                        (<code><?php echo $_SESSION['sede_codigo']; ?></code>)
+                                    <?php endif; ?>
+                                </div>
                             <?php endif; ?>
                         </div>
                         <div class="user-avatar">
@@ -888,7 +1010,9 @@ $nombre_empresa = obtenerNombreEmpresa();
                                 <i class="bi bi-gear me-2"></i>Configuración
                             </a>
                         </li>
-                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <li>
                             <a class="dropdown-item text-danger" href="<?php echo BASE_URL; ?>auth/logout.php">
                                 <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión

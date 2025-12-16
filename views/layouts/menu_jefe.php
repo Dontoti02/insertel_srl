@@ -30,6 +30,12 @@
     <span>Alertas</span>
 </a>
 
+<div class="menu-section">Análisis</div>
+<a href="<?php echo $base_url; ?>almacen/estadisticas_uso.php" class="menu-item <?php echo $current_page == 'estadisticas_uso.php' ? 'active' : ''; ?>">
+    <i class="bi bi-graph-up"></i>
+    <span>Estadísticas de Uso</span>
+</a>
+
 <div class="menu-section">Reportes</div>
 <a href="<?php echo $base_url; ?>almacen/reportes.php" class="menu-item <?php echo $current_page == 'reportes.php' ? 'active' : ''; ?>">
     <i class="bi bi-file-earmark-bar-graph"></i>

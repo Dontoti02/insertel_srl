@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Reportes Globales - Superadministrador
  */
@@ -41,15 +42,15 @@ if (isset($_GET['exportar'])) {
         $stmt->execute($params);
         $data = $stmt->fetchAll(PDO::FETCH_NUM);
         $headers = ['Sede', 'Código', 'Material', 'Categoría', 'Stock', 'Unidad', 'Mín', 'Máx', 'Ubicación', 'Costo'];
-        exportarCSV('reporte_global_materiales_' . date('Ymd') . '.csv', $data, $headers);
+        exportarExcel('reporte_global_materiales_' . date('Ymd') . '.xls', $data, $headers);
     }
-    
+
     if ($tipo === 'movimientos') {
         $fecha_desde = $_GET['fecha_desde'] ?? date('Y-m-01');
         $fecha_hasta = $_GET['fecha_hasta'] ?? date('Y-m-d');
         $params[':desde'] = $fecha_desde;
         $params[':hasta'] = $fecha_hasta;
-        
+
         $sede_where = $sede_id ? " AND mi.sede_id = :sede_id" : "";
         $query = "SELECT s.nombre as sede, DATE(mi.fecha_movimiento) as fecha, m.codigo, m.nombre, 
                          mi.tipo_movimiento, mi.cantidad, u.nombre_completo, mi.motivo
@@ -63,9 +64,9 @@ if (isset($_GET['exportar'])) {
         $stmt->execute($params);
         $data = $stmt->fetchAll(PDO::FETCH_NUM);
         $headers = ['Sede', 'Fecha', 'Código', 'Material', 'Tipo', 'Cantidad', 'Usuario', 'Motivo'];
-        exportarCSV('reporte_global_movimientos_' . date('Ymd') . '.csv', $data, $headers);
+        exportarExcel('reporte_global_movimientos_' . date('Ymd') . '.xls', $data, $headers);
     }
-    
+
     if ($tipo === 'solicitudes') {
         $sede_where = $sede_id ? " AND s.sede_id = :sede_id" : "";
         $query = "SELECT sed.nombre as sede, s.codigo_solicitud, u.nombre_completo, DATE(s.fecha_solicitud) as fecha,
@@ -79,7 +80,7 @@ if (isset($_GET['exportar'])) {
         $stmt->execute($params);
         $data = $stmt->fetchAll(PDO::FETCH_NUM);
         $headers = ['Sede', 'Código', 'Técnico', 'Fecha', 'Estado', 'Motivo'];
-        exportarCSV('reporte_global_solicitudes_' . date('Ymd') . '.csv', $data, $headers);
+        exportarExcel('reporte_global_solicitudes_' . date('Ymd') . '.xls', $data, $headers);
     }
 }
 
@@ -192,7 +193,7 @@ foreach ($movimientos_tipo as $mov) {
         $entradas_por_fecha[$fecha] = 0;
         $salidas_por_fecha[$fecha] = 0;
     }
-    
+
     if ($mov['tipo_movimiento'] === 'entrada') {
         $entradas_por_fecha[$fecha] = (int)$mov['total_cantidad'];
     } else {
@@ -221,8 +222,10 @@ sort($todas_fechas);
             <h5 class="text-center mb-3">Inventario de Materiales</h5>
             <form method="GET">
                 <input type="hidden" name="exportar" value="materiales">
-                <div class="mb-3"><label class="form-label small">Sede:</label><select name="sede_id" class="form-select form-select-sm"><option value="">Todas las sedes</option><?php foreach ($sedes as $sede): ?><option value="<?php echo $sede['id']; ?>"><?php echo $sede['nombre']; ?></option><?php endforeach; ?></select></div>
-                <div class="d-grid"><button type="submit" class="btn btn-primary"><i class="bi bi-download me-2"></i>Descargar CSV</button></div>
+                <div class="mb-3"><label class="form-label small">Sede:</label><select name="sede_id" class="form-select form-select-sm">
+                        <option value="">Todas las sedes</option><?php foreach ($sedes as $sede): ?><option value="<?php echo $sede['id']; ?>"><?php echo $sede['nombre']; ?></option><?php endforeach; ?>
+                    </select></div>
+                <div class="d-grid"><button type="submit" class="btn btn-primary"><i class="bi bi-file-earmark-excel me-2"></i>Descargar Excel</button></div>
             </form>
         </div>
     </div>
@@ -234,10 +237,12 @@ sort($todas_fechas);
             <h5 class="text-center mb-3">Movimientos de Inventario</h5>
             <form method="GET">
                 <input type="hidden" name="exportar" value="movimientos">
-                <div class="mb-2"><label class="form-label small">Sede:</label><select name="sede_id" class="form-select form-select-sm"><option value="">Todas las sedes</option><?php foreach ($sedes as $sede): ?><option value="<?php echo $sede['id']; ?>"><?php echo $sede['nombre']; ?></option><?php endforeach; ?></select></div>
+                <div class="mb-2"><label class="form-label small">Sede:</label><select name="sede_id" class="form-select form-select-sm">
+                        <option value="">Todas las sedes</option><?php foreach ($sedes as $sede): ?><option value="<?php echo $sede['id']; ?>"><?php echo $sede['nombre']; ?></option><?php endforeach; ?>
+                    </select></div>
                 <div class="mb-2"><label class="form-label small">Desde:</label><input type="date" name="fecha_desde" class="form-control form-control-sm" value="<?php echo date('Y-m-01'); ?>"></div>
                 <div class="mb-3"><label class="form-label small">Hasta:</label><input type="date" name="fecha_hasta" class="form-control form-control-sm" value="<?php echo date('Y-m-d'); ?>"></div>
-                <div class="d-grid"><button type="submit" class="btn btn-success"><i class="bi bi-download me-2"></i>Descargar CSV</button></div>
+                <div class="d-grid"><button type="submit" class="btn btn-success"><i class="bi bi-file-earmark-excel me-2"></i>Descargar Excel</button></div>
             </form>
         </div>
     </div>
@@ -249,8 +254,10 @@ sort($todas_fechas);
             <h5 class="text-center mb-3">Solicitudes de Técnicos</h5>
             <form method="GET">
                 <input type="hidden" name="exportar" value="solicitudes">
-                <div class="mb-3"><label class="form-label small">Sede:</label><select name="sede_id" class="form-select form-select-sm"><option value="">Todas las sedes</option><?php foreach ($sedes as $sede): ?><option value="<?php echo $sede['id']; ?>"><?php echo $sede['nombre']; ?></option><?php endforeach; ?></select></div>
-                <div class="d-grid"><button type="submit" class="btn btn-warning"><i class="bi bi-download me-2"></i>Descargar CSV</button></div>
+                <div class="mb-3"><label class="form-label small">Sede:</label><select name="sede_id" class="form-select form-select-sm">
+                        <option value="">Todas las sedes</option><?php foreach ($sedes as $sede): ?><option value="<?php echo $sede['id']; ?>"><?php echo $sede['nombre']; ?></option><?php endforeach; ?>
+                    </select></div>
+                <div class="d-grid"><button type="submit" class="btn btn-warning"><i class="bi bi-file-earmark-excel me-2"></i>Descargar Excel</button></div>
             </form>
         </div>
     </div>
@@ -262,13 +269,13 @@ sort($todas_fechas);
         <div class="content-card">
             <h5 class="mb-4"><i class="bi bi-graph-up me-2"></i>Estadísticas Globales del Sistema</h5>
             <?php
-                $stats_sede_id = $_GET['stats_sede_id'] ?? null;
-                $stats_params = [];
-                $stats_sede_where = '';
-                if ($stats_sede_id) {
-                    $stats_params[':sede_id'] = $stats_sede_id;
-                    $stats_sede_where = ' WHERE sede_id = :sede_id';
-                }
+            $stats_sede_id = $_GET['stats_sede_id'] ?? null;
+            $stats_params = [];
+            $stats_sede_where = '';
+            if ($stats_sede_id) {
+                $stats_params[':sede_id'] = $stats_sede_id;
+                $stats_sede_where = ' WHERE sede_id = :sede_id';
+            }
             ?>
             <form method="GET" class="row g-3 mb-4 align-items-end">
                 <div class="col-md-4">
@@ -276,7 +283,7 @@ sort($todas_fechas);
                     <select name="stats_sede_id" class="form-select">
                         <option value="">Todas las sedes</option>
                         <?php foreach ($sedes as $sede): ?>
-                        <option value="<?php echo $sede['id']; ?>" <?php echo ($stats_sede_id == $sede['id']) ? 'selected' : ''; ?>><?php echo $sede['nombre']; ?></option>
+                            <option value="<?php echo $sede['id']; ?>" <?php echo ($stats_sede_id == $sede['id']) ? 'selected' : ''; ?>><?php echo $sede['nombre']; ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -284,10 +291,10 @@ sort($todas_fechas);
                     <button type="submit" class="btn btn-secondary">Aplicar</button>
                 </div>
             </form>
-            
+
             <div class="row">
                 <div class="col-md-6">
-                    <h6 class="text-muted">Resumen de Inventario <?php if($stats_sede_id) echo " (Sede)"; ?></h6>
+                    <h6 class="text-muted">Resumen de Inventario <?php if ($stats_sede_id) echo " (Sede)"; ?></h6>
                     <?php
                     $query = "SELECT 
                                 COUNT(*) as total_materiales,
@@ -306,9 +313,9 @@ sort($todas_fechas);
                         <li class="list-group-item d-flex justify-content-between"><span>Materiales en Estado Crítico:</span><strong class="text-danger"><?php echo $stats['criticos']; ?></strong></li>
                     </ul>
                 </div>
-                
+
                 <div class="col-md-6">
-                    <h6 class="text-muted">Actividad del Mes <?php if($stats_sede_id) echo " (Sede)"; ?></h6>
+                    <h6 class="text-muted">Actividad del Mes <?php if ($stats_sede_id) echo " (Sede)"; ?></h6>
                     <?php
                     $mov_sede_where = $stats_sede_id ? ' AND sede_id = :sede_id' : '';
                     $query = "SELECT tipo_movimiento, COUNT(*) as total, SUM(cantidad) as suma_cantidad
@@ -323,9 +330,9 @@ sort($todas_fechas);
                     ?>
                     <ul class="list-group">
                         <?php foreach ($mov_stats as $stat): ?>
-                        <li class="list-group-item d-flex justify-content-between"><span><?php echo ucfirst($stat['tipo_movimiento']); ?>s:</span><strong><?php echo $stat['total']; ?> movimientos</strong></li>
+                            <li class="list-group-item d-flex justify-content-between"><span><?php echo ucfirst($stat['tipo_movimiento']); ?>s:</span><strong><?php echo $stat['total']; ?> movimientos</strong></li>
                         <?php endforeach; ?>
-                        
+
                         <?php
                         $sol_sede_where = $stats_sede_id ? ' AND sede_id = :sede_id' : '';
                         $query_sol = "SELECT COUNT(*) as total FROM solicitudes 
@@ -349,7 +356,7 @@ sort($todas_fechas);
             <h6 class="mb-3"><i class="bi bi-funnel me-2"></i>Filtros de Gráficas</h6>
             <form method="GET" class="row g-3 align-items-end">
                 <input type="hidden" name="stats_sede_id" value="<?php echo $stats_sede_id; ?>">
-                
+
                 <div class="col-md-4">
                     <label class="form-label">Período:</label>
                     <select name="periodo_grafica" class="form-select" onchange="this.form.submit()">
@@ -364,15 +371,15 @@ sort($todas_fechas);
                         </option>
                     </select>
                 </div>
-                
+
                 <div class="col-md-4">
                     <label class="form-label">Sede:</label>
                     <select name="stats_sede_id" class="form-select" onchange="this.form.submit()">
                         <option value="">Todas las sedes</option>
                         <?php foreach ($sedes as $sede): ?>
-                        <option value="<?php echo $sede['id']; ?>" <?php echo ($stats_sede_id == $sede['id']) ? 'selected' : ''; ?>>
-                            <?php echo $sede['nombre']; ?>
-                        </option>
+                            <option value="<?php echo $sede['id']; ?>" <?php echo ($stats_sede_id == $sede['id']) ? 'selected' : ''; ?>>
+                                <?php echo $sede['nombre']; ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -416,143 +423,145 @@ sort($todas_fechas);
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 <script>
-// Datos para gráfica de evolución de inventario
-const datosValor = <?php echo json_encode($valor_acumulado); ?>;
-const fechasValor = datosValor.map(d => d.fecha);
-const valoresInventario = datosValor.map(d => d.valor);
+    // Datos para gráfica de evolución de inventario
+    const datosValor = <?php echo json_encode($valor_acumulado); ?>;
+    const fechasValor = datosValor.map(d => d.fecha);
+    const valoresInventario = datosValor.map(d => d.valor);
 
-// Mostrar conteo de datos
-document.getElementById('countValor').textContent = datosValor.length;
+    // Mostrar conteo de datos
+    document.getElementById('countValor').textContent = datosValor.length;
 
-// Verificar si hay datos
-if (datosValor.length === 0) {
-    console.warn('No hay datos para la gráfica de evolución de inventario');
-}
-
-const ctxValor = document.getElementById('chartValorInventario').getContext('2d');
-new Chart(ctxValor, {
-    type: 'line',
-    data: {
-        labels: fechasValor.length > 0 ? fechasValor : ['Sin datos'],
-        datasets: [{
-            label: 'Cantidad Acumulada',
-            data: valoresInventario.length > 0 ? valoresInventario : [0],
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: '#6366f1',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointHoverRadius: 6
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                display: true,
-                position: 'top'
-            },
-            filler: {
-                propagate: true
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(0, 0, 0, 0.05)'
-                }
-            },
-            x: {
-                grid: {
-                    display: false
-                }
-            }
-        }
+    // Verificar si hay datos
+    if (datosValor.length === 0) {
+        console.warn('No hay datos para la gráfica de evolución de inventario');
     }
-});
 
-// Datos para gráfica de entradas y salidas
-const todasFechas = <?php echo json_encode($todas_fechas); ?>;
-const entradasPorFecha = <?php echo json_encode($entradas_por_fecha); ?>;
-const salidasPorFecha = <?php echo json_encode($salidas_por_fecha); ?>;
-const entradasData = todasFechas.map(fecha => entradasPorFecha[fecha] || 0);
-const salidasData = todasFechas.map(fecha => salidasPorFecha[fecha] || 0);
-
-// Mostrar conteo de datos
-document.getElementById('countMovimientos').textContent = todasFechas.length;
-
-// Verificar si hay datos
-if (todasFechas.length === 0) {
-    console.warn('No hay datos para la gráfica de movimientos');
-}
-
-const ctxMovimientos = document.getElementById('chartMovimientos').getContext('2d');
-new Chart(ctxMovimientos, {
-    type: 'line',
-    data: {
-        labels: todasFechas.length > 0 ? todasFechas : ['Sin datos'],
-        datasets: [
-            {
-                label: 'Entradas',
-                data: entradasData.length > 0 ? entradasData : [0],
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    const ctxValor = document.getElementById('chartValorInventario').getContext('2d');
+    new Chart(ctxValor, {
+        type: 'line',
+        data: {
+            labels: fechasValor.length > 0 ? fechasValor : ['Sin datos'],
+            datasets: [{
+                label: 'Cantidad Acumulada',
+                data: valoresInventario.length > 0 ? valoresInventario : [0],
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
                 borderWidth: 3,
                 fill: true,
                 tension: 0.4,
                 pointRadius: 4,
-                pointBackgroundColor: '#10b981',
+                pointBackgroundColor: '#6366f1',
                 pointBorderColor: '#fff',
-                pointBorderWidth: 2
-            },
-            {
-                label: 'Salidas',
-                data: salidasData.length > 0 ? salidasData : [0],
-                borderColor: '#ef4444',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointBackgroundColor: '#ef4444',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                display: true,
-                position: 'top'
-            }
+                pointBorderWidth: 2,
+                pointHoverRadius: 6
+            }]
         },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(0, 0, 0, 0.05)'
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                filler: {
+                    propagate: true
                 }
             },
-            x: {
-                grid: {
-                    display: false
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
                 }
             }
         }
-    }
-});
+    });
 
-console.log('Datos de evolución:', datosValor);
-console.log('Datos de movimientos:', { entradas: entradasData, salidas: salidasData });
+    // Datos para gráfica de entradas y salidas
+    const todasFechas = <?php echo json_encode($todas_fechas); ?>;
+    const entradasPorFecha = <?php echo json_encode($entradas_por_fecha); ?>;
+    const salidasPorFecha = <?php echo json_encode($salidas_por_fecha); ?>;
+    const entradasData = todasFechas.map(fecha => entradasPorFecha[fecha] || 0);
+    const salidasData = todasFechas.map(fecha => salidasPorFecha[fecha] || 0);
+
+    // Mostrar conteo de datos
+    document.getElementById('countMovimientos').textContent = todasFechas.length;
+
+    // Verificar si hay datos
+    if (todasFechas.length === 0) {
+        console.warn('No hay datos para la gráfica de movimientos');
+    }
+
+    const ctxMovimientos = document.getElementById('chartMovimientos').getContext('2d');
+    new Chart(ctxMovimientos, {
+        type: 'line',
+        data: {
+            labels: todasFechas.length > 0 ? todasFechas : ['Sin datos'],
+            datasets: [{
+                    label: 'Entradas',
+                    data: entradasData.length > 0 ? entradasData : [0],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'Salidas',
+                    data: salidasData.length > 0 ? salidasData : [0],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#ef4444',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    console.log('Datos de evolución:', datosValor);
+    console.log('Datos de movimientos:', {
+        entradas: entradasData,
+        salidas: salidasData
+    });
 </script>
 
 <?php include '../layouts/footer.php'; ?>

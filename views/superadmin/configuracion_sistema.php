@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Configuración del Sistema - Superadministrador
  */
@@ -20,10 +21,10 @@ $configModel = new Configuracion($db);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['accion'])) {
         $accion = $_POST['accion'];
-        
+
         if ($accion === 'actualizar_config' && isset($_POST['configuraciones'])) {
             $configuraciones = $_POST['configuraciones'];
-            
+
             if ($configModel->actualizarMultiples($configuraciones)) {
                 registrarActividad($_SESSION['usuario_id'], 'actualizar', 'configuracion', 'Actualización de configuración del sistema');
                 setMensaje('success', 'Configuración actualizada exitosamente.');
@@ -32,17 +33,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             redirigir('views/superadmin/configuracion_sistema.php');
         }
-        
+
         if ($accion === 'limpiar_logs') {
             try {
                 $dias = intval($_POST['dias_antiguos'] ?? 30);
                 $fecha_limite = date('Y-m-d H:i:s', strtotime("-$dias days"));
-                
+
                 $query = "DELETE FROM historial_actividades WHERE fecha < :fecha_limite";
                 $stmt = $db->prepare($query);
                 $stmt->execute([':fecha_limite' => $fecha_limite]);
                 $registros_eliminados = $stmt->rowCount();
-                
+
                 registrarActividad($_SESSION['usuario_id'], 'limpiar', 'logs', "Logs antiguos eliminados: $registros_eliminados registros");
                 setMensaje('success', "Se eliminaron $registros_eliminados registros de auditoría más antiguos de $dias días.");
             } catch (Exception $e) {
@@ -50,18 +51,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             redirigir('views/superadmin/configuracion_sistema.php');
         }
-        
+
         if ($accion === 'optimizar_db') {
             try {
                 $tablas = ['usuarios', 'materiales', 'movimientos_inventario', 'solicitudes', 'auditoria', 'configuracion_sistema'];
                 $optimizadas = 0;
-                
+
                 foreach ($tablas as $tabla) {
                     try {
                         // Verificar que la tabla existe antes de optimizar
                         $check = $db->query("SHOW TABLES LIKE '$tabla'");
                         $check->fetchAll();
-                        
+
                         if ($check->rowCount() > 0) {
                             $db->query("OPTIMIZE TABLE $tabla");
                             $optimizadas++;
@@ -71,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         continue;
                     }
                 }
-                
+
                 registrarActividad($_SESSION['usuario_id'], 'optimizar', 'base_datos', "Base de datos optimizada: $optimizadas tablas");
                 setMensaje('success', "Base de datos optimizada correctamente. Se optimizaron $optimizadas tablas.");
             } catch (Exception $e) {
@@ -85,7 +86,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Obtener todas las configuraciones
 $categorias = $configModel->obtenerCategorias();
 $configuraciones_por_categoria = [];
+
+// Mapeo de nombres de categorías a español
+$nombres_categorias = [
+    'general' => 'General',
+    'sistema' => 'Sistema',
+    'seguridad' => 'Seguridad',
+    'inventario' => 'Inventario',
+    'reportes' => 'Reportes'
+];
+
+// Traducciones de etiquetas al español
+$etiquetas_es = [
+    'nombre_empresa' => 'Nombre de la Empresa',
+    'email_contacto' => 'Email de Contacto',
+    'telefono_contacto' => 'Teléfono de Contacto',
+    'direccion_empresa' => 'Dirección de la Empresa',
+    'registros_por_pagina' => 'Registros por Página',
+    'dias_vencimiento_materiales' => 'Días de Vencimiento de Materiales',
+    'stock_minimo_alerta' => 'Stock Mínimo para Alerta',
+    'enable_password_recovery' => 'Habilitar Recuperación de Contraseña',
+    'password_recovery_expiration' => 'Expiración de Recuperación (minutos)',
+    'max_login_attempts' => 'Máximo de Intentos de Inicio de Sesión',
+    'lockout_duration' => 'Duración del Bloqueo (minutos)',
+    'login_lockout_minutes' => 'Minutos de Bloqueo tras Exceder Intentos',
+    'session_timeout' => 'Tiempo de Espera de Sesión (minutos)',
+    'enable_email_notifications' => 'Habilitar Notificaciones por Email',
+    'require_strong_passwords' => 'Requerir Contraseñas Seguras',
+    'password_min_length' => 'Longitud Mínima de Contraseña',
+    'enable_two_factor' => 'Habilitar Autenticación de Dos Factores',
+    'backup_frequency' => 'Frecuencia de Respaldo',
+    'maintenance_mode' => 'Modo de Mantenimiento',
+    'max_recovery_attempts' => 'Máximo de Intentos de Recuperación',
+    'email_notificaciones' => 'Email para Notificaciones',
+    'horas_respuesta_solicitud' => 'Horas para Responder Solicitudes'
+];
+
 foreach ($categorias as $categoria) {
+    // Excluir la categoría de notificaciones
+    if ($categoria === 'notificaciones') {
+        continue;
+    }
     $configuraciones_por_categoria[$categoria] = $configModel->obtenerPorCategoria($categoria);
 }
 
@@ -94,15 +135,15 @@ try {
     $stmt_usuarios = $db->query("SELECT COUNT(*) as total FROM usuarios");
     $result_usuarios = $stmt_usuarios->fetch(PDO::FETCH_ASSOC);
     $total_usuarios = $result_usuarios['total'] ?? 0;
-    
+
     $stmt_materiales = $db->query("SELECT COUNT(*) as total FROM materiales");
     $result_materiales = $stmt_materiales->fetch(PDO::FETCH_ASSOC);
     $total_materiales = $result_materiales['total'] ?? 0;
-    
+
     $stmt_logs = $db->query("SELECT COUNT(*) as total FROM historial_actividades");
     $result_logs = $stmt_logs->fetch(PDO::FETCH_ASSOC);
     $total_logs = $result_logs['total'] ?? 0;
-    
+
     $stmt_db_size = $db->query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size_mb FROM information_schema.tables WHERE table_schema = DATABASE()");
     $result_db_size = $stmt_db_size->fetch(PDO::FETCH_ASSOC);
     $db_size = $result_db_size['size_mb'] ?? 0;
@@ -187,61 +228,64 @@ include '../layouts/header.php';
         <div class="content-card">
             <h5><i class="bi bi-gear-wide-connected me-2"></i>Configuración General del Sistema</h5>
             <p class="text-muted mb-3">Ajuste los parámetros de funcionamiento de la aplicación.</p>
-            
+
             <form method="POST">
                 <input type="hidden" name="accion" value="actualizar_config">
-                
+
                 <?php if (!empty($configuraciones_por_categoria)): ?>
                     <!-- Tabs para categorías -->
                     <ul class="nav nav-tabs mb-4" role="tablist">
-                        <?php $primera = true; foreach ($configuraciones_por_categoria as $categoria => $configuraciones): ?>
+                        <?php $primera = true;
+                        foreach ($configuraciones_por_categoria as $categoria => $configuraciones): ?>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link <?php echo $primera ? 'active' : ''; ?>" 
-                                        id="tab-<?php echo $categoria; ?>" 
-                                        data-bs-toggle="tab" 
-                                        data-bs-target="#content-<?php echo $categoria; ?>" 
-                                        type="button" role="tab">
-                                    <?php echo ucfirst($categoria); ?>
+                                <button class="nav-link <?php echo $primera ? 'active' : ''; ?>"
+                                    id="tab-<?php echo $categoria; ?>"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#content-<?php echo $categoria; ?>"
+                                    type="button" role="tab">
+                                    <?php echo $nombres_categorias[$categoria] ?? ucfirst($categoria); ?>
                                 </button>
                             </li>
-                            <?php $primera = false; endforeach; ?>
+                        <?php $primera = false;
+                        endforeach; ?>
                     </ul>
 
                     <!-- Contenido de tabs -->
                     <div class="tab-content">
-                        <?php $primera = true; foreach ($configuraciones_por_categoria as $categoria => $configuraciones): ?>
-                            <div class="tab-pane fade <?php echo $primera ? 'show active' : ''; ?>" 
-                                 id="content-<?php echo $categoria; ?>" role="tabpanel">
-                                
+                        <?php $primera = true;
+                        foreach ($configuraciones_por_categoria as $categoria => $configuraciones): ?>
+                            <div class="tab-pane fade <?php echo $primera ? 'show active' : ''; ?>"
+                                id="content-<?php echo $categoria; ?>" role="tabpanel">
+
                                 <?php foreach ($configuraciones as $config): ?>
                                     <div class="mb-4">
                                         <label for="<?php echo $config['clave']; ?>" class="form-label fw-bold">
-                                            <?php echo str_replace('_', ' ', ucfirst($config['clave'])); ?>
+                                            <?php echo $etiquetas_es[$config['clave']] ?? str_replace('_', ' ', ucwords($config['clave'], '_')); ?>
                                         </label>
-                                        
+
                                         <?php if ($config['tipo'] === 'texto'): ?>
-                                            <input type="text" class="form-control" 
-                                                   id="<?php echo $config['clave']; ?>" 
-                                                   name="configuraciones[<?php echo $config['clave']; ?>]" 
-                                                   value="<?php echo htmlspecialchars($config['valor']); ?>">
+                                            <input type="text" class="form-control"
+                                                id="<?php echo $config['clave']; ?>"
+                                                name="configuraciones[<?php echo $config['clave']; ?>]"
+                                                value="<?php echo htmlspecialchars($config['valor']); ?>">
                                         <?php elseif ($config['tipo'] === 'numero'): ?>
-                                            <input type="number" class="form-control" 
-                                                   id="<?php echo $config['clave']; ?>" 
-                                                   name="configuraciones[<?php echo $config['clave']; ?>]" 
-                                                   value="<?php echo htmlspecialchars($config['valor']); ?>">
+                                            <input type="number" class="form-control"
+                                                id="<?php echo $config['clave']; ?>"
+                                                name="configuraciones[<?php echo $config['clave']; ?>]"
+                                                value="<?php echo htmlspecialchars($config['valor']); ?>">
                                         <?php elseif ($config['tipo'] === 'boolean'): ?>
-                                            <select class="form-select" 
-                                                    id="<?php echo $config['clave']; ?>" 
-                                                    name="configuraciones[<?php echo $config['clave']; ?>]">
+                                            <select class="form-select"
+                                                id="<?php echo $config['clave']; ?>"
+                                                name="configuraciones[<?php echo $config['clave']; ?>]">
                                                 <option value="1" <?php echo ($config['valor'] == '1') ? 'selected' : ''; ?>>Habilitado</option>
                                                 <option value="0" <?php echo ($config['valor'] == '0') ? 'selected' : ''; ?>>Deshabilitado</option>
                                             </select>
                                         <?php else: ?>
                                             <textarea class="form-control" rows="3"
-                                                      id="<?php echo $config['clave']; ?>" 
-                                                      name="configuraciones[<?php echo $config['clave']; ?>]"><?php echo htmlspecialchars($config['valor']); ?></textarea>
+                                                id="<?php echo $config['clave']; ?>"
+                                                name="configuraciones[<?php echo $config['clave']; ?>]"><?php echo htmlspecialchars($config['valor']); ?></textarea>
                                         <?php endif; ?>
-                                        
+
                                         <?php if (!empty($config['descripcion'])): ?>
                                             <small class="text-muted d-block mt-2">
                                                 <i class="bi bi-info-circle me-1"></i><?php echo $config['descripcion']; ?>
@@ -250,7 +294,8 @@ include '../layouts/header.php';
                                     </div>
                                 <?php endforeach; ?>
                             </div>
-                            <?php $primera = false; endforeach; ?>
+                        <?php $primera = false;
+                        endforeach; ?>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
@@ -277,12 +322,12 @@ include '../layouts/header.php';
         border-bottom: 2px solid transparent;
         transition: all 0.3s ease;
     }
-    
+
     .nav-tabs .nav-link:hover {
         color: #6366f1;
         border-bottom-color: #6366f1;
     }
-    
+
     .nav-tabs .nav-link.active {
         color: #6366f1;
         border-bottom-color: #6366f1;

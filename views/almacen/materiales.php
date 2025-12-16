@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Gestión de Materiales - Almacén (Jefe, Asistente y Administrador)
  */
@@ -23,13 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Eliminación en masa
             $materiales_eliminados = 0;
             $errores_eliminacion = [];
-            
+
             foreach ($_POST['materiales_seleccionados'] as $material_id) {
                 $material_id = (int)$material_id;
-                
+
                 try {
                     $resultado = $materialModel->eliminarSeguro($material_id);
-                    
+
                     if ($resultado['success']) {
                         $materiales_eliminados++;
                         if ($resultado['action'] === 'desactivado') {
@@ -42,18 +43,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $errores_eliminacion[] = "Error al procesar material ID $material_id: " . $e->getMessage();
                 }
             }
-            
+
             if ($materiales_eliminados > 0) {
                 setMensaje('success', "Se eliminaron/desactivaron $materiales_eliminados materiales correctamente");
                 registrarActividad($_SESSION['usuario_id'], 'eliminar_masa', 'materiales', "Eliminados: $materiales_eliminados materiales");
             }
-            
+
             if (!empty($errores_eliminacion)) {
                 foreach ($errores_eliminacion as $error) {
                     setMensaje('danger', $error);
                 }
             }
-            
         } elseif ($_POST['accion'] === 'crear') {
             $materialModel->codigo = sanitizar($_POST['codigo']);
             $materialModel->nombre = sanitizar($_POST['nombre']);
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $materialModel->stock_maximo = (int)$_POST['stock_maximo'];
             $materialModel->ubicacion = sanitizar($_POST['ubicacion']);
             $materialModel->estado = 'activo';
-            
+
             if ($materialModel->existeCodigo($materialModel->codigo)) {
                 setMensaje('danger', 'El código de material ya existe');
             } else {
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $materialModel->stock_maximo = (int)$_POST['stock_maximo'];
             $materialModel->ubicacion = sanitizar($_POST['ubicacion']);
             $materialModel->estado = sanitizar($_POST['estado']);
-            
+
             if ($materialModel->actualizar()) {
                 registrarActividad($_SESSION['usuario_id'], 'actualizar', 'materiales', "Material actualizado: {$materialModel->nombre}");
                 setMensaje('success', 'Material actualizado exitosamente');
@@ -121,7 +121,7 @@ if (!empty($_GET['estado'])) {
     $filtros['estado'] = sanitizar($_GET['estado']);
 } elseif (tieneRol(ROL_ADMINISTRADOR)) {
     // Para admin, no filtrar por estado por defecto para que vea todo
-    $filtros['estado'] = ''; 
+    $filtros['estado'] = '';
 }
 
 // Configuración de paginación
@@ -134,15 +134,14 @@ $filtros['limit'] = $materiales_por_pagina;
 $filtros['offset'] = $offset;
 
 // Obtener materiales y total
-if (tieneRol(ROL_ADMINISTRADOR)) {
-    $filtros['ignorar_sede'] = true;
-}
+// Obtener materiales y total
 $materiales = $materialModel->obtenerTodos($filtros);
 $total_materiales = $materialModel->contarTodos($filtros);
 $total_paginas = ceil($total_materiales / $materiales_por_pagina);
 
 // Función para generar URLs de paginación
-function generarUrlPaginacion($pagina) {
+function generarUrlPaginacion($pagina)
+{
     $params = $_GET;
     $params['pagina'] = $pagina;
     return '?' . http_build_query($params);
@@ -160,51 +159,51 @@ include '../layouts/header.php';
 ?>
 
 <style>
-.pagination .page-link {
-    color: #0d3b66;
-    border-color: #dee2e6;
-}
+    .pagination .page-link {
+        color: #0d3b66;
+        border-color: #dee2e6;
+    }
 
-.pagination .page-item.active .page-link {
-    background-color: #0d3b66;
-    border-color: #0d3b66;
-}
+    .pagination .page-item.active .page-link {
+        background-color: #0d3b66;
+        border-color: #0d3b66;
+    }
 
-.pagination .page-link:hover {
-    color: #0a2a4a;
-    background-color: #e9ecef;
-    border-color: #dee2e6;
-}
+    .pagination .page-link:hover {
+        color: #0a2a4a;
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
 
-.pagination .page-item.disabled .page-link {
-    color: #6c757d;
-    background-color: #fff;
-    border-color: #dee2e6;
-}
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
 
-/* Estilos para selección en masa */
-.material-checkbox {
-    cursor: pointer;
-}
+    /* Estilos para selección en masa */
+    .material-checkbox {
+        cursor: pointer;
+    }
 
-#selectAll {
-    cursor: pointer;
-}
+    #selectAll {
+        cursor: pointer;
+    }
 
-.table th:first-child,
-.table td:first-child {
-    text-align: center;
-    vertical-align: middle;
-}
+    .table th:first-child,
+    .table td:first-child {
+        text-align: center;
+        vertical-align: middle;
+    }
 
-#btnEliminarMasa {
-    transition: all 0.3s ease;
-}
+    #btnEliminarMasa {
+        transition: all 0.3s ease;
+    }
 
-#btnEliminarMasa:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
-}
+    #btnEliminarMasa:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    }
 </style>
 
 <!-- Barra de acciones -->
@@ -252,9 +251,9 @@ include '../layouts/header.php';
                     <select name="categoria_id" class="form-select">
                         <option value="">Todas las categorías</option>
                         <?php foreach ($categorias as $cat): ?>
-                        <option value="<?php echo $cat['id']; ?>" <?php echo (isset($_GET['categoria_id']) && $_GET['categoria_id'] == $cat['id']) ? 'selected' : ''; ?>>
-                            <?php echo $cat['nombre']; ?>
-                        </option>
+                            <option value="<?php echo $cat['id']; ?>" <?php echo (isset($_GET['categoria_id']) && $_GET['categoria_id'] == $cat['id']) ? 'selected' : ''; ?>>
+                                <?php echo $cat['nombre']; ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -307,72 +306,72 @@ include '../layouts/header.php';
                     </thead>
                     <tbody>
                         <?php if (empty($materiales)): ?>
-                        <tr>
-                            <td colspan="10" class="text-center text-muted py-4">
-                                No se encontraron materiales
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted py-4">
+                                    No se encontraron materiales
+                                </td>
+                            </tr>
                         <?php else: ?>
                             <?php foreach ($materiales as $material): ?>
-                            <?php
+                                <?php
                                 $alerta_stock = '';
                                 if ($material['stock_actual'] <= $material['stock_minimo']) {
                                     $alerta_stock = 'table-danger';
                                 } elseif ($material['stock_actual'] >= $material['stock_maximo']) {
                                     $alerta_stock = 'table-warning';
                                 }
-                            ?>
-                            <tr class="<?php echo $alerta_stock; ?>" data-estado="<?php echo $material['estado']; ?>">
-                                <td>
-                                    <input type="checkbox" class="form-check-input material-checkbox" value="<?php echo $material['id']; ?>" onchange="updateSelectionCount()">
-                                </td>
-                                <td><code><?php echo $material['codigo']; ?></code></td>
-                                <td>
-                                    <strong><?php echo $material['nombre']; ?></strong>
-                                    <?php if ($material['descripcion']): ?>
-                                    <br><small class="text-muted"><?php echo substr($material['descripcion'], 0, 50); ?></small>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?php echo $material['categoria_nombre'] ?? '-'; ?></td>
-                                <td>
-                                    <?php if ($material['stock_actual'] <= $material['stock_minimo']): ?>
-                                    <span class="badge bg-danger">
-                                        <i class="bi bi-exclamation-triangle me-1"></i>
-                                        <?php echo $material['stock_actual']; ?> <?php echo $material['unidad']; ?>
-                                    </span>
-                                    <?php else: ?>
-                                    <span class="badge bg-success">
-                                        <?php echo $material['stock_actual']; ?> <?php echo $material['unidad']; ?>
-                                    </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <small><?php echo $material['stock_minimo']; ?> / <?php echo $material['stock_maximo']; ?> <?php echo $material['unidad']; ?></small>
-                                </td>
-                                <td><?php echo $material['ubicacion'] ?? '-'; ?></td>
-                                <td><?php echo formatearMoneda($material['costo_unitario']); ?></td>
-                                <td>
-                                    <span class="badge bg-<?php echo getBadgeEstado($material['estado']); ?>">
-                                        <?php echo ucfirst($material['estado']); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-primary" onclick="editarMaterial(<?php echo htmlspecialchars(json_encode($material)); ?>)">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <a href="movimientos.php?material_id=<?php echo $material['id']; ?>" class="btn btn-outline-info">
-                                            <i class="bi bi-list"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
+                                ?>
+                                <tr class="<?php echo $alerta_stock; ?>" data-estado="<?php echo $material['estado']; ?>">
+                                    <td>
+                                        <input type="checkbox" class="form-check-input material-checkbox" value="<?php echo $material['id']; ?>" onchange="updateSelectionCount()">
+                                    </td>
+                                    <td><code><?php echo $material['codigo']; ?></code></td>
+                                    <td>
+                                        <strong><?php echo $material['nombre']; ?></strong>
+                                        <?php if ($material['descripcion']): ?>
+                                            <br><small class="text-muted"><?php echo substr($material['descripcion'], 0, 50); ?></small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo $material['categoria_nombre'] ?? '-'; ?></td>
+                                    <td>
+                                        <?php if ($material['stock_actual'] <= $material['stock_minimo']): ?>
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                <?php echo $material['stock_actual']; ?> <?php echo $material['unidad']; ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-success">
+                                                <?php echo $material['stock_actual']; ?> <?php echo $material['unidad']; ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <small><?php echo $material['stock_minimo']; ?> / <?php echo $material['stock_maximo']; ?> <?php echo $material['unidad']; ?></small>
+                                    </td>
+                                    <td><?php echo $material['ubicacion'] ?? '-'; ?></td>
+                                    <td><?php echo formatearMoneda($material['costo_unitario']); ?></td>
+                                    <td>
+                                        <span class="badge bg-<?php echo getBadgeEstado($material['estado']); ?>">
+                                            <?php echo ucfirst($material['estado']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" onclick="editarMaterial(<?php echo htmlspecialchars(json_encode($material)); ?>)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <a href="movimientos.php?material_id=<?php echo $material['id']; ?>" class="btn btn-outline-info">
+                                                <i class="bi bi-list"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
                 </table>
             </div>
-            
+
             <!-- Información de paginación -->
             <div class="d-flex justify-content-between align-items-center p-3 border-top">
                 <div class="text-muted">
@@ -381,70 +380,70 @@ include '../layouts/header.php';
                         (Página <?php echo $pagina_actual; ?> de <?php echo $total_paginas; ?>)
                     <?php endif; ?>
                 </div>
-                
+
                 <?php if ($total_paginas > 1): ?>
-                <nav aria-label="Paginación de materiales">
-                    <ul class="pagination mb-0">
-                        <!-- Página anterior -->
-                        <?php if ($pagina_actual > 1): ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?php echo generarUrlPaginacion($pagina_actual - 1); ?>">
-                                    <i class="bi bi-chevron-left"></i>
-                                </a>
-                            </li>
-                        <?php else: ?>
-                            <li class="page-item disabled">
-                                <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-                            </li>
-                        <?php endif; ?>
-                        
-                        <!-- Páginas -->
-                        <?php
-                        $inicio = max(1, $pagina_actual - 2);
-                        $fin = min($total_paginas, $pagina_actual + 2);
-                        
-                        if ($inicio > 1): ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?php echo generarUrlPaginacion(1); ?>">1</a>
-                            </li>
-                            <?php if ($inicio > 2): ?>
+                    <nav aria-label="Paginación de materiales">
+                        <ul class="pagination mb-0">
+                            <!-- Página anterior -->
+                            <?php if ($pagina_actual > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?php echo generarUrlPaginacion($pagina_actual - 1); ?>">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            <?php else: ?>
                                 <li class="page-item disabled">
-                                    <span class="page-link">...</span>
+                                    <span class="page-link"><i class="bi bi-chevron-left"></i></span>
                                 </li>
                             <?php endif; ?>
-                        <?php endif; ?>
-                        
-                        <?php for ($i = $inicio; $i <= $fin; $i++): ?>
-                            <li class="page-item <?php echo ($i == $pagina_actual) ? 'active' : ''; ?>">
-                                <a class="page-link" href="<?php echo generarUrlPaginacion($i); ?>"><?php echo $i; ?></a>
-                            </li>
-                        <?php endfor; ?>
-                        
-                        <?php if ($fin < $total_paginas): ?>
-                            <?php if ($fin < $total_paginas - 1): ?>
-                                <li class="page-item disabled">
-                                    <span class="page-link">...</span>
+
+                            <!-- Páginas -->
+                            <?php
+                            $inicio = max(1, $pagina_actual - 2);
+                            $fin = min($total_paginas, $pagina_actual + 2);
+
+                            if ($inicio > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?php echo generarUrlPaginacion(1); ?>">1</a>
+                                </li>
+                                <?php if ($inicio > 2): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
+                            <?php for ($i = $inicio; $i <= $fin; $i++): ?>
+                                <li class="page-item <?php echo ($i == $pagina_actual) ? 'active' : ''; ?>">
+                                    <a class="page-link" href="<?php echo generarUrlPaginacion($i); ?>"><?php echo $i; ?></a>
+                                </li>
+                            <?php endfor; ?>
+
+                            <?php if ($fin < $total_paginas): ?>
+                                <?php if ($fin < $total_paginas - 1): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                <?php endif; ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?php echo generarUrlPaginacion($total_paginas); ?>"><?php echo $total_paginas; ?></a>
                                 </li>
                             <?php endif; ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?php echo generarUrlPaginacion($total_paginas); ?>"><?php echo $total_paginas; ?></a>
-                            </li>
-                        <?php endif; ?>
-                        
-                        <!-- Página siguiente -->
-                        <?php if ($pagina_actual < $total_paginas): ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?php echo generarUrlPaginacion($pagina_actual + 1); ?>">
-                                    <i class="bi bi-chevron-right"></i>
-                                </a>
-                            </li>
-                        <?php else: ?>
-                            <li class="page-item disabled">
-                                <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-                            </li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
+
+                            <!-- Página siguiente -->
+                            <?php if ($pagina_actual < $total_paginas): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="<?php echo generarUrlPaginacion($pagina_actual + 1); ?>">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                            <?php else: ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </nav>
                 <?php endif; ?>
             </div>
         </div>
@@ -482,7 +481,7 @@ include '../layouts/header.php';
                             <select name="categoria_id" class="form-select">
                                 <option value="">Sin categoría</option>
                                 <?php foreach ($categorias as $cat): ?>
-                                <option value="<?php echo $cat['id']; ?>"><?php echo $cat['nombre']; ?></option>
+                                    <option value="<?php echo $cat['id']; ?>"><?php echo $cat['nombre']; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -501,7 +500,7 @@ include '../layouts/header.php';
                             <select name="proveedor_id" class="form-select">
                                 <option value="">Sin proveedor</option>
                                 <?php foreach ($proveedores as $prov): ?>
-                                <option value="<?php echo $prov['id']; ?>"><?php echo $prov['nombre']; ?></option>
+                                    <option value="<?php echo $prov['id']; ?>"><?php echo $prov['nombre']; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -570,7 +569,7 @@ include '../layouts/header.php';
                             <select name="categoria_id" id="edit_categoria_id" class="form-select">
                                 <option value="">Sin categoría</option>
                                 <?php foreach ($categorias as $cat): ?>
-                                <option value="<?php echo $cat['id']; ?>"><?php echo $cat['nombre']; ?></option>
+                                    <option value="<?php echo $cat['id']; ?>"><?php echo $cat['nombre']; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -589,7 +588,7 @@ include '../layouts/header.php';
                             <select name="proveedor_id" id="edit_proveedor_id" class="form-select">
                                 <option value="">Sin proveedor</option>
                                 <?php foreach ($proveedores as $prov): ?>
-                                <option value="<?php echo $prov['id']; ?>"><?php echo $prov['nombre']; ?></option>
+                                    <option value="<?php echo $prov['id']; ?>"><?php echo $prov['nombre']; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -636,209 +635,209 @@ include '../layouts/header.php';
 </div>
 
 <script>
-function editarMaterial(material) {
-    document.getElementById('edit_id').value = material.id;
-    document.getElementById('edit_codigo').value = material.codigo;
-    document.getElementById('edit_nombre').value = material.nombre;
-    document.getElementById('edit_descripcion').value = material.descripcion || '';
-    document.getElementById('edit_categoria_id').value = material.categoria_id || '';
-    document.getElementById('edit_unidad').value = material.unidad;
-    document.getElementById('edit_proveedor_id').value = material.proveedor_id || '';
-    document.getElementById('edit_costo_unitario').value = material.costo_unitario;
-    document.getElementById('edit_stock_actual').value = material.stock_actual;
-    document.getElementById('edit_stock_minimo').value = material.stock_minimo;
-    document.getElementById('edit_stock_maximo').value = material.stock_maximo;
-    document.getElementById('edit_ubicacion').value = material.ubicacion || '';
-    document.getElementById('edit_estado').value = material.estado;
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalEditarMaterial'));
-    modal.show();
-}
+    function editarMaterial(material) {
+        document.getElementById('edit_id').value = material.id;
+        document.getElementById('edit_codigo').value = material.codigo;
+        document.getElementById('edit_nombre').value = material.nombre;
+        document.getElementById('edit_descripcion').value = material.descripcion || '';
+        document.getElementById('edit_categoria_id').value = material.categoria_id || '';
+        document.getElementById('edit_unidad').value = material.unidad;
+        document.getElementById('edit_proveedor_id').value = material.proveedor_id || '';
+        document.getElementById('edit_costo_unitario').value = material.costo_unitario;
+        document.getElementById('edit_stock_actual').value = material.stock_actual;
+        document.getElementById('edit_stock_minimo').value = material.stock_minimo;
+        document.getElementById('edit_stock_maximo').value = material.stock_maximo;
+        document.getElementById('edit_ubicacion').value = material.ubicacion || '';
+        document.getElementById('edit_estado').value = material.estado;
 
-// Funciones para eliminación en masa
-function toggleSelectAll() {
-    const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.material-checkbox');
-    
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAll.checked;
-    });
-    
-    updateSelectionCount();
-}
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarMaterial'));
+        modal.show();
+    }
 
-function updateSelectionCount() {
-    const checkboxes = document.querySelectorAll('.material-checkbox:checked');
-    const count = checkboxes.length;
-    const btnEliminar = document.getElementById('btnEliminarMasa');
-    const contador = document.getElementById('contadorSeleccionados');
-    
-    contador.textContent = count;
-    
-    if (count > 0) {
-        btnEliminar.style.display = 'inline-block';
-    } else {
-        btnEliminar.style.display = 'none';
-    }
-    
-    // Actualizar estado del checkbox "Seleccionar todo"
-    const totalCheckboxes = document.querySelectorAll('.material-checkbox').length;
-    const selectAll = document.getElementById('selectAll');
-    
-    if (count === 0) {
-        selectAll.indeterminate = false;
-        selectAll.checked = false;
-    } else if (count === totalCheckboxes) {
-        selectAll.indeterminate = false;
-        selectAll.checked = true;
-    } else {
-        selectAll.indeterminate = true;
-        selectAll.checked = false;
-    }
-}
+    // Funciones para eliminación en masa
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.material-checkbox');
 
-function confirmarEliminacionMasa() {
-    const checkboxes = document.querySelectorAll('.material-checkbox:checked');
-    const count = checkboxes.length;
-    
-    if (count === 0) {
-        alert('Seleccione al menos un material para eliminar');
-        return;
-    }
-    
-    const mensaje = `¿Está seguro de que desea eliminar ${count} material(es) seleccionado(s)?\n\n` +
-                   'Nota: Los materiales con movimientos de inventario serán desactivados en lugar de eliminados.';
-    
-    if (confirm(mensaje)) {
-        // Crear formulario dinámico
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.style.display = 'none';
-        
-        // Agregar acción
-        const accionInput = document.createElement('input');
-        accionInput.type = 'hidden';
-        accionInput.name = 'accion';
-        accionInput.value = 'eliminar_masa';
-        form.appendChild(accionInput);
-        
-        // Agregar IDs seleccionados
         checkboxes.forEach(checkbox => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'materiales_seleccionados[]';
-            input.value = checkbox.value;
-            form.appendChild(input);
+            checkbox.checked = selectAll.checked;
         });
-        
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
 
-// Mejorar visualización del filtro de estado
-document.addEventListener('DOMContentLoaded', function() {
-    const filtroEstado = document.getElementById('filtro-estado');
-    if (filtroEstado) {
-        filtroEstado.addEventListener('change', function() {
-            // Cambiar color del select según la opción seleccionada
-            const valor = this.value;
-            this.className = 'form-select';
-            
-            if (valor === 'activo') {
-                this.style.backgroundColor = '#d4edda';
-                this.style.color = '#155724';
-                this.style.borderColor = '#c3e6cb';
-            } else if (valor === 'inactivo') {
-                this.style.backgroundColor = '#f8d7da';
-                this.style.color = '#721c24';
-                this.style.borderColor = '#f5c6cb';
-            } else {
-                this.style.backgroundColor = '';
-                this.style.color = '';
-                this.style.borderColor = '';
-            }
-        });
-        
-        // Aplicar estilo inicial si hay un valor seleccionado
-        filtroEstado.dispatchEvent(new Event('change'));
+        updateSelectionCount();
     }
-});
 
-// Inicializar contadores al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    updateSelectionCount();
-});
+    function updateSelectionCount() {
+        const checkboxes = document.querySelectorAll('.material-checkbox:checked');
+        const count = checkboxes.length;
+        const btnEliminar = document.getElementById('btnEliminarMasa');
+        const contador = document.getElementById('contadorSeleccionados');
+
+        contador.textContent = count;
+
+        if (count > 0) {
+            btnEliminar.style.display = 'inline-block';
+        } else {
+            btnEliminar.style.display = 'none';
+        }
+
+        // Actualizar estado del checkbox "Seleccionar todo"
+        const totalCheckboxes = document.querySelectorAll('.material-checkbox').length;
+        const selectAll = document.getElementById('selectAll');
+
+        if (count === 0) {
+            selectAll.indeterminate = false;
+            selectAll.checked = false;
+        } else if (count === totalCheckboxes) {
+            selectAll.indeterminate = false;
+            selectAll.checked = true;
+        } else {
+            selectAll.indeterminate = true;
+            selectAll.checked = false;
+        }
+    }
+
+    function confirmarEliminacionMasa() {
+        const checkboxes = document.querySelectorAll('.material-checkbox:checked');
+        const count = checkboxes.length;
+
+        if (count === 0) {
+            alert('Seleccione al menos un material para eliminar');
+            return;
+        }
+
+        const mensaje = `¿Está seguro de que desea eliminar ${count} material(es) seleccionado(s)?\n\n` +
+            'Nota: Los materiales con movimientos de inventario serán desactivados en lugar de eliminados.';
+
+        if (confirm(mensaje)) {
+            // Crear formulario dinámico
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.style.display = 'none';
+
+            // Agregar acción
+            const accionInput = document.createElement('input');
+            accionInput.type = 'hidden';
+            accionInput.name = 'accion';
+            accionInput.value = 'eliminar_masa';
+            form.appendChild(accionInput);
+
+            // Agregar IDs seleccionados
+            checkboxes.forEach(checkbox => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'materiales_seleccionados[]';
+                input.value = checkbox.value;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    // Mejorar visualización del filtro de estado
+    document.addEventListener('DOMContentLoaded', function() {
+        const filtroEstado = document.getElementById('filtro-estado');
+        if (filtroEstado) {
+            filtroEstado.addEventListener('change', function() {
+                // Cambiar color del select según la opción seleccionada
+                const valor = this.value;
+                this.className = 'form-select';
+
+                if (valor === 'activo') {
+                    this.style.backgroundColor = '#d4edda';
+                    this.style.color = '#155724';
+                    this.style.borderColor = '#c3e6cb';
+                } else if (valor === 'inactivo') {
+                    this.style.backgroundColor = '#f8d7da';
+                    this.style.color = '#721c24';
+                    this.style.borderColor = '#f5c6cb';
+                } else {
+                    this.style.backgroundColor = '';
+                    this.style.color = '';
+                    this.style.borderColor = '';
+                }
+            });
+
+            // Aplicar estilo inicial si hay un valor seleccionado
+            filtroEstado.dispatchEvent(new Event('change'));
+        }
+    });
+
+    // Inicializar contadores al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectionCount();
+    });
 </script>
 
 <style>
-/* Estilos para el filtro de estado */
-#filtro-estado option[value="activo"] {
-    background-color: #d4edda !important;
-    color: #155724 !important;
-}
+    /* Estilos para el filtro de estado */
+    #filtro-estado option[value="activo"] {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+    }
 
-#filtro-estado option[value="inactivo"] {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
-}
+    #filtro-estado option[value="inactivo"] {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+    }
 
-/* Badges personalizados para estados de materiales */
-.badge-activo {
-    background: linear-gradient(135deg, #28a745, #20c997) !important;
-    color: #ffffff !important;
-    font-weight: 600 !important;
-    padding: 6px 12px !important;
-    border-radius: 20px !important;
-    font-size: 11px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3) !important;
-    border: none !important;
-}
+    /* Badges personalizados para estados de materiales */
+    .badge-activo {
+        background: linear-gradient(135deg, #28a745, #20c997) !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        padding: 6px 12px !important;
+        border-radius: 20px !important;
+        font-size: 11px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3) !important;
+        border: none !important;
+    }
 
-.badge-inactivo {
-    background: linear-gradient(135deg, #dc3545, #c82333) !important;
-    color: #ffffff !important;
-    font-weight: 600 !important;
-    padding: 6px 12px !important;
-    border-radius: 20px !important;
-    font-size: 11px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3) !important;
-    border: none !important;
-}
+    .badge-inactivo {
+        background: linear-gradient(135deg, #dc3545, #c82333) !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        padding: 6px 12px !important;
+        border-radius: 20px !important;
+        font-size: 11px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3) !important;
+        border: none !important;
+    }
 
-/* Mejorar visualización de badges de estado (fallback) */
-.badge.bg-success {
-    background: linear-gradient(135deg, #28a745, #20c997) !important;
-    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
-}
+    /* Mejorar visualización de badges de estado (fallback) */
+    .badge.bg-success {
+        background: linear-gradient(135deg, #28a745, #20c997) !important;
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    }
 
-.badge.bg-secondary {
-    background: linear-gradient(135deg, #6c757d, #495057) !important;
-    box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
-}
+    .badge.bg-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057) !important;
+        box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+    }
 
-/* Efecto hover en filas según estado */
-tbody tr[data-estado="activo"]:hover {
-    background-color: rgba(212, 237, 218, 0.1) !important;
-}
+    /* Efecto hover en filas según estado */
+    tbody tr[data-estado="activo"]:hover {
+        background-color: rgba(212, 237, 218, 0.1) !important;
+    }
 
-tbody tr[data-estado="inactivo"]:hover {
-    background-color: rgba(248, 215, 218, 0.1) !important;
-}
+    tbody tr[data-estado="inactivo"]:hover {
+        background-color: rgba(248, 215, 218, 0.1) !important;
+    }
 
-/* Indicador visual sutil en filas */
-tbody tr[data-estado="activo"] {
-    border-left: 3px solid #28a745;
-}
+    /* Indicador visual sutil en filas */
+    tbody tr[data-estado="activo"] {
+        border-left: 3px solid #28a745;
+    }
 
-tbody tr[data-estado="inactivo"] {
-    border-left: 3px solid #dc3545;
-    opacity: 0.8;
-}
+    tbody tr[data-estado="inactivo"] {
+        border-left: 3px solid #dc3545;
+        opacity: 0.8;
+    }
 </style>
 
 <?php include '../layouts/footer.php'; ?>

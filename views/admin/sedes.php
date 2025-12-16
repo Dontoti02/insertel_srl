@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Gestión de Sedes - Administrador
  */
@@ -27,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirigir('views/admin/sedes.php');
         }
     }
-    
+
     if ($accion === 'crear') {
         if (!esSuperAdmin()) {
             setMensaje('danger', 'Solo el Superadmin puede crear sedes');
@@ -40,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sedeModel->email = sanitizar($_POST['email']);
         $sedeModel->responsable_id = !empty($_POST['responsable_id']) ? (int)$_POST['responsable_id'] : null;
         $sedeModel->estado = $_POST['estado'];
-        
+
         if ($sedeModel->existeCodigo($sedeModel->codigo)) {
             setMensaje('danger', 'El código de sede ya existe');
         } else {
@@ -57,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    
+
     if ($accion === 'editar') {
         if (!esSuperAdmin()) {
             $sede_id_post = (int)($_POST['id'] ?? 0);
@@ -69,9 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sedeModel->direccion = sanitizar($_POST['direccion']);
         $sedeModel->telefono = sanitizar($_POST['telefono']);
         $sedeModel->email = sanitizar($_POST['email']);
-        $sedeModel->responsable_id = !empty($_POST['responsable_id']) ? (int)$_POST['responsable_id'] : null;
+        // responsable_id is not editable here
+        // $sedeModel->responsable_id = !empty($_POST['responsable_id']) ? (int)$_POST['responsable_id'] : null;
         $sedeModel->estado = $_POST['estado'];
-        
+
         if ($sedeModel->existeCodigo($sedeModel->codigo, $sedeModel->id)) {
             setMensaje('danger', 'El código de sede ya existe');
         } else {
@@ -99,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    
+
     if ($accion === 'eliminar') {
         if (!esSuperAdmin()) {
             setMensaje('danger', 'Solo el Superadmin puede eliminar sedes');
@@ -107,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $sede_id = (int)$_POST['id'];
         $sede_eliminar = $sedeModel->obtenerPorId($sede_id);
-        
+
         if ($sede_eliminar && $sedeModel->eliminar($sede_id)) {
             registrarActividad($_SESSION['usuario_id'], 'eliminar', 'sedes', "Sede eliminada: {$sede_eliminar['nombre']}");
             setMensaje('success', 'Sede eliminada exitosamente');
@@ -151,10 +153,10 @@ include '../layouts/header.php';
                     Sedes de la Empresa
                 </h5>
                 <?php if (esSuperAdmin()): ?>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaSede">
-                    <i class="bi bi-plus-circle me-2"></i>
-                    Nueva Sede
-                </button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaSede">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Nueva Sede
+                    </button>
                 <?php endif; ?>
             </div>
         </div>
@@ -210,37 +212,37 @@ include '../layouts/header.php';
                     </thead>
                     <tbody>
                         <?php if (empty($sedes)): ?>
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
-                                No se encontraron sedes
-                            </td>
-                        </tr>
-                        <?php else: ?>
-                            <?php foreach ($sedes as $sede): ?>
                             <tr>
-                                <td><code><?php echo $sede['codigo']; ?></code></td>
-                                <td><strong><?php echo $sede['nombre']; ?></strong></td>
-                                <td><?php echo $sede['direccion'] ?? '-'; ?></td>
-                                <td><?php echo $sede['responsable_nombre'] ?? 'Sin asignar'; ?></td>
-                                <td>
-                                    <span class="badge bg-info"><?php echo $sede['total_usuarios']; ?> usuarios</span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-<?php echo $sede['estado'] == 'activa' ? 'success' : 'secondary'; ?>">
-                                        <?php echo ucfirst($sede['estado']); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="editarSede(<?php echo htmlspecialchars(json_encode($sede)); ?>)">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <?php if (esSuperAdmin()): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmarEliminar(<?php echo $sede['id']; ?>, '<?php echo addslashes($sede['nombre']); ?>')">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                    <?php endif; ?>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    No se encontraron sedes
                                 </td>
                             </tr>
+                        <?php else: ?>
+                            <?php foreach ($sedes as $sede): ?>
+                                <tr>
+                                    <td><code><?php echo $sede['codigo']; ?></code></td>
+                                    <td><strong><?php echo $sede['nombre']; ?></strong></td>
+                                    <td><?php echo $sede['direccion'] ?? '-'; ?></td>
+                                    <td><?php echo $sede['responsable_nombre'] ?? 'Sin asignar'; ?></td>
+                                    <td>
+                                        <span class="badge bg-info"><?php echo $sede['total_usuarios']; ?> usuarios</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-<?php echo $sede['estado'] == 'activa' ? 'success' : 'secondary'; ?>">
+                                            <?php echo ucfirst($sede['estado']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="editarSede(<?php echo htmlspecialchars(json_encode($sede)); ?>)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <?php if (esSuperAdmin()): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmarEliminar(<?php echo $sede['id']; ?>, '<?php echo addslashes($sede['nombre']); ?>')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -291,7 +293,7 @@ include '../layouts/header.php';
                             <select name="responsable_id" class="form-select">
                                 <option value="">Sin asignar</option>
                                 <?php foreach ($usuarios_responsables as $user): ?>
-                                <option value="<?php echo $user['id']; ?>"><?php echo $user['nombre_completo']; ?></option>
+                                    <option value="<?php echo $user['id']; ?>"><?php echo $user['nombre_completo']; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -349,23 +351,12 @@ include '../layouts/header.php';
                             <input type="email" name="email" id="edit_email" class="form-control" maxlength="100">
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Responsable</label>
-                            <select name="responsable_id" id="edit_responsable_id" class="form-select">
-                                <option value="">Sin asignar</option>
-                                <?php foreach ($usuarios_responsables as $user): ?>
-                                <option value="<?php echo $user['id']; ?>"><?php echo $user['nombre_completo']; ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Estado *</label>
-                            <select name="estado" id="edit_estado" class="form-select" required>
-                                <option value="activa">Activa</option>
-                                <option value="inactiva">Inactiva</option>
-                            </select>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estado *</label>
+                        <select name="estado" id="edit_estado" class="form-select" required>
+                            <option value="activa">Activa</option>
+                            <option value="inactiva">Inactiva</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -408,27 +399,26 @@ include '../layouts/header.php';
 </div>
 
 <script>
-function editarSede(sede) {
-    document.getElementById('edit_id').value = sede.id;
-    document.getElementById('edit_codigo').value = sede.codigo;
-    document.getElementById('edit_nombre').value = sede.nombre;
-    document.getElementById('edit_direccion').value = sede.direccion || '';
-    document.getElementById('edit_telefono').value = sede.telefono || '';
-    document.getElementById('edit_email').value = sede.email || '';
-    document.getElementById('edit_responsable_id').value = sede.responsable_id || '';
-    document.getElementById('edit_estado').value = sede.estado;
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalEditarSede'));
-    modal.show();
-}
+    function editarSede(sede) {
+        document.getElementById('edit_id').value = sede.id;
+        document.getElementById('edit_codigo').value = sede.codigo;
+        document.getElementById('edit_nombre').value = sede.nombre;
+        document.getElementById('edit_direccion').value = sede.direccion || '';
+        document.getElementById('edit_telefono').value = sede.telefono || '';
+        document.getElementById('edit_email').value = sede.email || '';
+        document.getElementById('edit_estado').value = sede.estado;
 
-function confirmarEliminar(sedeId, nombre) {
-    document.getElementById('delete_id').value = sedeId;
-    document.getElementById('delete_nombre').textContent = nombre;
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalEliminarSede'));
-    modal.show();
-}
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarSede'));
+        modal.show();
+    }
+
+    function confirmarEliminar(sedeId, nombre) {
+        document.getElementById('delete_id').value = sedeId;
+        document.getElementById('delete_nombre').textContent = nombre;
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEliminarSede'));
+        modal.show();
+    }
 </script>
 
 <?php include '../layouts/footer.php'; ?>

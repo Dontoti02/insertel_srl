@@ -7,52 +7,11 @@ require_once '../config/constants.php';
 require_once '../config/functions.php';
 require_once '../config/database.php';
 require_once '../models/User.php';
-require_once '../models/PasswordRecovery.php';
 
 $database = new Database();
 $db = $database->getConnection();
 $user = new User($db); // Inicializar el modelo User
-$recovery = new PasswordRecovery($db);
 
-// Verificar token de "recordar sesión" si no está autenticado
-if (!estaAutenticado() && isset($_COOKIE['remember_token'])) {
-    $remember_token = $_COOKIE['remember_token'];
-    $user_data = $recovery->validateRememberToken($remember_token);
-    
-    if ($user_data) {
-        // Iniciar sesión automáticamente
-        iniciarSesion();
-        $_SESSION['usuario_id'] = $user_data['id'];
-        $_SESSION['username'] = $user_data['username'];
-        $_SESSION['nombre_completo'] = $user_data['nombre_completo'];
-        $_SESSION['rol_id'] = $user_data['rol_id'];
-        $_SESSION['rol_nombre'] = getNombreRol($user_data['rol_id']);
-
-        // Cargar datos de sede en sesión
-        $_SESSION['sede_id'] = $user_data['sede_id'] ?? null;
-        $_SESSION['sede_nombre'] = null;
-        $_SESSION['sede_codigo'] = null;
-        if (!empty($_SESSION['sede_id'])) {
-            $stmtSede = $db->prepare("SELECT s.nombre as sede_nombre, s.codigo as sede_codigo FROM sedes s WHERE s.id = :id LIMIT 1");
-            $stmtSede->bindValue(':id', $_SESSION['sede_id']);
-            $stmtSede->execute();
-            $sedeRow = $stmtSede->fetch(PDO::FETCH_ASSOC);
-            if ($sedeRow) {
-                $_SESSION['sede_nombre'] = $sedeRow['sede_nombre'];
-                $_SESSION['sede_codigo'] = $sedeRow['sede_codigo'];
-            }
-        }
-        
-        // Registrar actividad
-        registrarActividad($user_data['id'], 'login_remember', 'autenticacion', 'Inicio de sesión automático (recordar sesión)');
-        
-        // Redirigir según rol
-        redirigirSegunRol();
-    } else {
-        // Token inválido, eliminar cookie
-        setcookie('remember_token', '', time() - 3600, '/', '', false, true);
-    }
-}
 
 // Si ya está autenticado, redirigir
 if (estaAutenticado()) {
@@ -65,7 +24,6 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = sanitizar($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
-    $remember = isset($_POST['remember']) && $_POST['remember'] === 'on';
 
     if (empty($username) || empty($password)) {
         $error = 'Por favor complete todos los campos';
@@ -84,18 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['sede_nombre'] = $usuario['sede_nombre'] ?? null;
             $_SESSION['sede_codigo'] = $usuario['sede_codigo'] ?? null;
 
-            // Si marcó "recordar sesión", crear token
-            if ($remember) {
-                $remember_token = $recovery->createRememberToken($usuario['id']);
-                if ($remember_token) {
-                    // Crear cookie segura (30 días)
-                    setcookie('remember_token', $remember_token, time() + (30 * 24 * 60 * 60), '/', '', false, true);
-                }
-            }
 
             // Registrar actividad
-            $activity_desc = 'Inicio de sesión exitoso' . ($remember ? ' (recordar sesión activado)' : '');
-            registrarActividad($usuario['id'], 'login', 'autenticacion', $activity_desc);
+            registrarActividad($usuario['id'], 'login', 'autenticacion', 'Inicio de sesión exitoso');
 
             // Redirigir según rol
             redirigirSegunRol();
@@ -176,14 +125,6 @@ $nombre_empresa = obtenerNombreEmpresa();
                     <span class="error-message" id="passwordError"></span>
                 </div>
 
-                <div class="form-options">
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="remember" name="remember">
-                        <span class="checkmark"></span>
-                        Recordar sesión
-                    </label>
-                    <a href="forgot_password.php" class="forgot-link">¿Olvidaste tu contraseña?</a>
-                </div>
 
                 <button type="submit" class="login-btn">
                     <span class="btn-text">Iniciar Sesión</span>

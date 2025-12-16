@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Página de Perfil de Usuario
  */
@@ -22,19 +23,20 @@ $usuario = $userModel->obtenerPorId($_SESSION['usuario_id']);
 // Procesar actualización de perfil
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
-    
+
     if ($accion === 'actualizar_perfil') {
         $userModel->id = $_SESSION['usuario_id'];
         $userModel->nombre_completo = sanitizar($_POST['nombre_completo']);
-        $userModel->email = sanitizar($_POST['email']);
+        // $userModel->email = sanitizar($_POST['email']); // COMENTADO POR SEGURIDAD
+        $userModel->email = $usuario['email']; // Mantener email original
         $userModel->telefono = sanitizar($_POST['telefono']);
         $userModel->rol_id = $usuario['rol_id']; // Mantener el rol actual
         $userModel->estado = $usuario['estado']; // Mantener el estado actual
-        
+
         if ($userModel->actualizar()) {
             // Actualizar datos en sesión
             $_SESSION['nombre_completo'] = $userModel->nombre_completo;
-            
+
             registrarActividad($_SESSION['usuario_id'], 'actualizar', 'perfil', 'Perfil actualizado');
             setMensaje('success', 'Perfil actualizado exitosamente');
             redirigir('views/perfil.php');
@@ -42,12 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setMensaje('danger', 'Error al actualizar el perfil');
         }
     }
-    
+
     if ($accion === 'cambiar_password') {
         $password_actual = $_POST['password_actual'];
         $nueva_password = $_POST['nueva_password'];
         $confirmar_password = $_POST['confirmar_password'];
-        
+
         // Verificar contraseña actual
         if (!password_verify($password_actual, $usuario['password'])) {
             setMensaje('danger', 'La contraseña actual es incorrecta');
@@ -69,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accion === 'subir_imagen') {
         if (isset($_FILES['imagen_perfil']) && $_FILES['imagen_perfil']['error'] !== UPLOAD_ERR_NO_FILE) {
             $resultado = $userModel->subirImagenPerfil($_SESSION['usuario_id'], $_FILES['imagen_perfil']);
-            
+
             if ($resultado['exito']) {
                 registrarActividad($_SESSION['usuario_id'], 'subir_imagen', 'perfil', 'Imagen de perfil actualizada');
                 setMensaje('success', $resultado['mensaje']);
@@ -114,20 +116,20 @@ $url_imagen_perfil = $userModel->obtenerUrlImagenPerfil($usuario['id']);
         <div class="content-card text-center">
             <!-- Avatar/Imagen de Perfil -->
             <div class="position-relative d-inline-block mb-3">
-                <?php 
+                <?php
                 $url_imagen = $userModel->obtenerUrlImagenPerfil($usuario['id']);
                 if ($url_imagen && file_exists('../' . $url_imagen)):
                 ?>
-                    <img src="<?php echo BASE_URL . $url_imagen; ?>" alt="Perfil" 
-                         class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #6366f1;">
+                    <img src="<?php echo BASE_URL . $url_imagen; ?>" alt="Perfil"
+                        class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #6366f1;">
                 <?php else: ?>
                     <div class="user-avatar mx-auto" style="width: 120px; height: 120px; font-size: 48px; display: flex; align-items: center; justify-content: center;">
                         <?php echo strtoupper(substr($usuario['nombre_completo'], 0, 1)); ?>
                     </div>
                 <?php endif; ?>
-                <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0" 
-                        data-bs-toggle="modal" data-bs-target="#modalSubirImagen"
-                        style="border-radius: 50%; width: 40px; height: 40px; padding: 0;">
+                <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0"
+                    data-bs-toggle="modal" data-bs-target="#modalSubirImagen"
+                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;">
                     <i class="bi bi-camera-fill"></i>
                 </button>
             </div>
@@ -158,7 +160,7 @@ $url_imagen_perfil = $userModel->obtenerUrlImagenPerfil($usuario['id']);
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-8">
         <!-- Actualizar Información Personal -->
         <div class="content-card">
@@ -170,25 +172,25 @@ $url_imagen_perfil = $userModel->obtenerUrlImagenPerfil($usuario['id']);
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Nombre Completo *</label>
-                        <input type="text" name="nombre_completo" class="form-control" 
-                               value="<?php echo $usuario['nombre_completo']; ?>" required>
+                        <input type="text" name="nombre_completo" class="form-control"
+                            value="<?php echo $usuario['nombre_completo']; ?>" required>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control" 
-                               value="<?php echo $usuario['email']; ?>">
+                        <label class="form-label">Email <small class="text-muted">(No editable)</small></label>
+                        <input type="email" name="email" class="form-control bg-light"
+                            value="<?php echo $usuario['email']; ?>" readonly title="El correo electrónico no se puede modificar">
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Teléfono</label>
-                        <input type="text" name="telefono" class="form-control" 
-                               value="<?php echo $usuario['telefono']; ?>">
+                        <input type="text" name="telefono" class="form-control"
+                            value="<?php echo $usuario['telefono']; ?>">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Fecha de Registro</label>
-                        <input type="text" class="form-control" 
-                               value="<?php echo formatearFechaHora($usuario['created_at']); ?>" readonly>
+                        <input type="text" class="form-control"
+                            value="<?php echo formatearFechaHora($usuario['created_at']); ?>" readonly>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary">
@@ -217,14 +219,14 @@ $url_imagen_perfil = $userModel->obtenerUrlImagenPerfil($usuario['id']);
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Nueva Contraseña *</label>
-                        <input type="password" name="nueva_password" class="form-control" 
-                               minlength="6" required>
+                        <input type="password" name="nueva_password" class="form-control"
+                            minlength="6" required>
                         <small class="text-muted">Mínimo 6 caracteres</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Confirmar Nueva Contraseña *</label>
-                        <input type="password" name="confirmar_password" class="form-control" 
-                               minlength="6" required>
+                        <input type="password" name="confirmar_password" class="form-control"
+                            minlength="6" required>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-warning">
@@ -248,12 +250,12 @@ $url_imagen_perfil = $userModel->obtenerUrlImagenPerfil($usuario['id']);
             <form method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="accion" value="subir_imagen">
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Seleccionar Imagen *</label>
-                        <input type="file" name="imagen_perfil" class="form-control" 
-                               accept="image/jpeg,image/png,image/gif" required
-                               id="inputImagen">
+                        <input type="file" name="imagen_perfil" class="form-control"
+                            accept="image/jpeg,image/png,image/gif" required
+                            id="inputImagen">
                         <small class="text-muted d-block mt-2">
                             <i class="bi bi-info-circle me-1"></i>
                             Formatos permitidos: JPG, PNG, GIF | Tamaño máximo: 5MB
@@ -263,8 +265,8 @@ $url_imagen_perfil = $userModel->obtenerUrlImagenPerfil($usuario['id']);
                     <div class="mb-3">
                         <label class="form-label">Vista Previa:</label>
                         <div id="previewImagen" class="text-center">
-                            <img id="imgPreview" src="" alt="Vista previa" 
-                                 style="max-width: 100%; max-height: 300px; display: none; border-radius: 8px;">
+                            <img id="imgPreview" src="" alt="Vista previa"
+                                style="max-width: 100%; max-height: 300px; display: none; border-radius: 8px;">
                             <p class="text-muted" id="textoPreview">No hay imagen seleccionada</p>
                         </div>
                     </div>
@@ -284,58 +286,58 @@ $url_imagen_perfil = $userModel->obtenerUrlImagenPerfil($usuario['id']);
 
 <!-- Modal para Eliminar Imagen de Perfil -->
 <?php if ($url_imagen && file_exists('../' . $url_imagen)): ?>
-<div class="modal fade" id="modalEliminarImagen" tabindex="-1" aria-labelledby="modalEliminarImagenLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalEliminarImagenLabel">
-                    <i class="bi bi-trash me-2"></i>Eliminar Imagen de Perfil
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal fade" id="modalEliminarImagen" tabindex="-1" aria-labelledby="modalEliminarImagenLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEliminarImagenLabel">
+                        <i class="bi bi-trash me-2"></i>Eliminar Imagen de Perfil
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="accion" value="eliminar_imagen">
+                        <p class="text-muted">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            ¿Está seguro de que desea eliminar su imagen de perfil?
+                            Se mostrará el avatar con su inicial.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-2"></i>Eliminar
+                        </button>
+                    </div>
+                </form>
             </div>
-            <form method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="accion" value="eliminar_imagen">
-                    <p class="text-muted">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        ¿Está seguro de que desea eliminar su imagen de perfil? 
-                        Se mostrará el avatar con su inicial.
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle me-2"></i>Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash me-2"></i>Eliminar
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
-</div>
 <?php endif; ?>
 
 <script>
-// Vista previa de imagen
-document.getElementById('inputImagen').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    const preview = document.getElementById('imgPreview');
-    const textoPreview = document.getElementById('textoPreview');
-    
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            preview.src = event.target.result;
-            preview.style.display = 'block';
-            textoPreview.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    } else {
-        preview.style.display = 'none';
-        textoPreview.style.display = 'block';
-    }
-});
+    // Vista previa de imagen
+    document.getElementById('inputImagen').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('imgPreview');
+        const textoPreview = document.getElementById('textoPreview');
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                preview.src = event.target.result;
+                preview.style.display = 'block';
+                textoPreview.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+            textoPreview.style.display = 'block';
+        }
+    });
 </script>
 
 <?php include 'layouts/footer.php'; ?>

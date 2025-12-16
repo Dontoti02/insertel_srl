@@ -1,9 +1,11 @@
 <?php
+
 /**
  * Modelo de Sede
  */
 
-class Sede {
+class Sede
+{
     private $conn;
     private $table_name = "sedes";
 
@@ -16,14 +18,16 @@ class Sede {
     public $responsable_id;
     public $estado;
 
-    public function __construct($db) {
+    public function __construct($db)
+    {
         $this->conn = $db;
     }
 
     /**
      * Crear sede
      */
-    public function crear() {
+    public function crear()
+    {
         $query = "INSERT INTO " . $this->table_name . " 
                   (nombre, codigo, direccion, telefono, email, responsable_id, estado) 
                   VALUES (:nombre, :codigo, :direccion, :telefono, :email, :responsable_id, :estado)";
@@ -47,7 +51,8 @@ class Sede {
     /**
      * Obtener todas las sedes
      */
-    public function obtenerTodas($filtros = []) {
+    public function obtenerTodas($filtros = [])
+    {
         $where = ["1=1"];
         $params = [];
 
@@ -71,7 +76,7 @@ class Sede {
                   ORDER BY s.nombre";
 
         $stmt = $this->conn->prepare($query);
-        
+
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
         }
@@ -83,7 +88,8 @@ class Sede {
     /**
      * Obtener sede por ID
      */
-    public function obtenerPorId($id) {
+    public function obtenerPorId($id)
+    {
         $query = "SELECT s.*, 
                          u.nombre_completo as responsable_nombre,
                          (SELECT COUNT(*) FROM usuarios WHERE sede_id = s.id AND estado = 'activo') as total_usuarios
@@ -102,7 +108,8 @@ class Sede {
     /**
      * Actualizar sede
      */
-    public function actualizar() {
+    public function actualizar()
+    {
         $query = "UPDATE " . $this->table_name . " 
                   SET nombre = :nombre,
                       codigo = :codigo,
@@ -130,30 +137,32 @@ class Sede {
     /**
      * Verificar si existe código de sede
      */
-    public function existeCodigo($codigo, $excluir_id = null) {
+    public function existeCodigo($codigo, $excluir_id = null)
+    {
         $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " WHERE codigo = :codigo";
-        
+
         if ($excluir_id) {
             $query .= " AND id != :excluir_id";
         }
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":codigo", $codigo);
-        
+
         if ($excluir_id) {
             $stmt->bindParam(":excluir_id", $excluir_id);
         }
 
         $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         return (int)$result['total'] > 0;
     }
 
     /**
      * Obtener sedes activas para select
      */
-    public function obtenerActivas() {
+    public function obtenerActivas()
+    {
         $query = "SELECT id, nombre, codigo FROM " . $this->table_name . " 
                   WHERE estado = 'activa' 
                   ORDER BY nombre";
@@ -167,7 +176,8 @@ class Sede {
     /**
      * Obtener estadísticas de la sede
      */
-    public function obtenerEstadisticas($sede_id) {
+    public function obtenerEstadisticas($sede_id)
+    {
         $query = "SELECT 
                     (SELECT COUNT(*) FROM usuarios WHERE sede_id = :sede_id AND estado = 'activo') as total_usuarios,
                     (SELECT COUNT(*) FROM solicitudes WHERE sede_id = :sede_id2) as total_solicitudes,
@@ -189,7 +199,8 @@ class Sede {
     /**
      * Obtener información de qué se eliminará al borrar una sede
      */
-    public function obtenerDatosAEliminar($id) {
+    public function obtenerDatosAEliminar($id)
+    {
         $datos = [
             'usuarios' => 0,
             'materiales' => 0,
@@ -241,79 +252,58 @@ class Sede {
     }
 
     /**
-     * Eliminar sede y todos sus datos asociados (con cascada)
+     * Eliminar sede
+     * Los usuarios de la sede quedan sin asignar (sede_id = NULL)
      */
-    public function eliminar($id) {
+    public function eliminar($id)
+    {
         try {
+            // Verificar que la sede existe
+            $sede = $this->obtenerPorId($id);
+            if (!$sede) {
+                error_log("Intento de eliminar sede inexistente - ID: $id");
+                return false;
+            }
+
+            error_log("Iniciando eliminación de sede - ID: $id, Nombre: {$sede['nombre']}");
+
             $this->conn->beginTransaction();
 
-            // Desactivar restricciones de clave foránea
-            $this->conn->exec("SET FOREIGN_KEY_CHECKS=0");
-
-            // Eliminar asignaciones a técnicos
-            $query = "DELETE FROM asignacion_tecnicos WHERE sede_id = :id";
+            // 1. Desasignar usuarios de la sede (ponerlos sin sede)
+            $query = "UPDATE usuarios SET sede_id = NULL WHERE sede_id = :id";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(":id", $id);
             $stmt->execute();
+            $usuarios_desasignados = $stmt->rowCount();
+            error_log("Usuarios desasignados de la sede: $usuarios_desasignados");
 
-            // Eliminar solicitudes
-            $query = "DELETE FROM solicitudes WHERE sede_id = :id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":id", $id);
-            $stmt->execute();
-
-            // Eliminar movimientos de inventario
-            $query = "DELETE FROM movimientos_inventario WHERE sede_id = :id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":id", $id);
-            $stmt->execute();
-
-            // Eliminar materiales
-            $query = "DELETE FROM materiales WHERE sede_id = :id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":id", $id);
-            $stmt->execute();
-
-            // Eliminar usuarios
-            $query = "DELETE FROM usuarios WHERE sede_id = :id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":id", $id);
-            $stmt->execute();
-
-            // Eliminar configuraciones de sede
-            $query = "DELETE FROM configuraciones_sede WHERE sede_id = :id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":id", $id);
-            $stmt->execute();
-
-            // Eliminar la sede
+            // 2. Eliminar la sede
             $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(":id", $id);
             $stmt->execute();
 
-            // Reactivar restricciones de clave foránea
-            $this->conn->exec("SET FOREIGN_KEY_CHECKS=1");
+            if ($stmt->rowCount() === 0) {
+                error_log("Error: No se pudo eliminar la sede - ID: $id");
+                throw new Exception("No se pudo eliminar la sede");
+            }
 
             // Confirmar transacción
             $this->conn->commit();
-            
+
+            error_log("Sede eliminada exitosamente - ID: $id, Usuarios desasignados: $usuarios_desasignados");
+
             return true;
         } catch (Exception $e) {
-            // Reactivar restricciones en caso de error
-            try {
-                $this->conn->exec("SET FOREIGN_KEY_CHECKS=1");
-            } catch (Exception $e2) {
-                // Ignorar error
-            }
-            
+            error_log("Error al eliminar sede - ID: $id, Error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+
             // Revertir transacción
-            try {
+            if ($this->conn->inTransaction()) {
                 $this->conn->rollBack();
-            } catch (Exception $e2) {
-                // Ignorar error
+                error_log("Transacción revertida");
             }
-            
+
             return false;
         }
     }

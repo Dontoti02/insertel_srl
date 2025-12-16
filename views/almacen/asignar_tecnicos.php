@@ -217,7 +217,7 @@ function cargarMaterialesTecnico(tecnicoId, tecnicoNombre) {
         </div>
     `;
     
-    fetch('<?php echo $base_url; ?>ajax/obtener_materiales_tecnico.php', {
+    fetch('<?php echo BASE_URL; ?>ajax/obtener_materiales_tecnico.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',

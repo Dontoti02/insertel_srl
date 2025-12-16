@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Gestión de Proveedores - Administrador
  */
@@ -17,7 +18,7 @@ $db = $database->getConnection();
 // Procesar acciones
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
-    
+
     if ($accion === 'crear') {
         $nombre = sanitizar($_POST['nombre']);
         $ruc = sanitizar($_POST['ruc']);
@@ -26,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $direccion = sanitizar($_POST['direccion'] ?? '');
         $contacto = sanitizar($_POST['contacto'] ?? '');
         $estado = $_POST['estado'] ?? 'activo';
-        
+
         if (empty($nombre) || empty($ruc)) {
             setMensaje('danger', 'El nombre y RUC son requeridos');
         } else {
@@ -36,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt_check->bindParam(':nombre', $nombre);
             $stmt_check->bindParam(':ruc', $ruc);
             $stmt_check->execute();
-            
+
             if ($stmt_check->rowCount() > 0) {
                 setMensaje('danger', 'Ya existe un proveedor con ese nombre o RUC');
             } else {
@@ -50,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bindParam(':direccion', $direccion);
                 $stmt->bindParam(':contacto', $contacto);
                 $stmt->bindParam(':estado', $estado);
-                
+
                 if ($stmt->execute()) {
                     registrarActividad($_SESSION['usuario_id'], 'crear', 'proveedores', "Proveedor creado: $nombre");
                     setMensaje('success', 'Proveedor creado exitosamente');
@@ -61,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    
+
     if ($accion === 'editar') {
         $id = (int)$_POST['id'];
         $nombre = sanitizar($_POST['nombre']);
@@ -71,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $direccion = sanitizar($_POST['direccion'] ?? '');
         $contacto = sanitizar($_POST['contacto'] ?? '');
         $estado = $_POST['estado'] ?? 'activo';
-        
+
         if (empty($nombre) || empty($ruc)) {
             setMensaje('danger', 'El nombre y RUC son requeridos');
         } else {
@@ -86,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bindParam(':direccion', $direccion);
             $stmt->bindParam(':contacto', $contacto);
             $stmt->bindParam(':estado', $estado);
-            
+
             if ($stmt->execute()) {
                 registrarActividad($_SESSION['usuario_id'], 'editar', 'proveedores', "Proveedor actualizado ID: $id");
                 setMensaje('success', 'Proveedor actualizado exitosamente');
@@ -96,24 +97,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    
+
     if ($accion === 'eliminar') {
         $id = (int)$_POST['id'];
-        
+
         // Verificar que no hay materiales usando este proveedor
         $query_check = "SELECT COUNT(*) as total FROM materiales WHERE proveedor_id = :id";
         $stmt_check = $db->prepare($query_check);
         $stmt_check->bindParam(':id', $id);
         $stmt_check->execute();
         $result = $stmt_check->fetch(PDO::FETCH_ASSOC);
-        
+
         if ($result['total'] > 0) {
             setMensaje('danger', 'No se puede eliminar el proveedor. Hay ' . $result['total'] . ' material(es) asociado(s)');
         } else {
             $query = "DELETE FROM proveedores WHERE id = :id";
             $stmt = $db->prepare($query);
             $stmt->bindParam(':id', $id);
-            
+
             if ($stmt->execute()) {
                 registrarActividad($_SESSION['usuario_id'], 'eliminar', 'proveedores', "Proveedor eliminado ID: $id");
                 setMensaje('success', 'Proveedor eliminado exitosamente');
@@ -130,21 +131,31 @@ $registros_por_pagina = 20;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
-// Obtener total de proveedores
-$query_total = "SELECT COUNT(DISTINCT p.id) as total FROM proveedores p";
-$stmt_total = $db->query($query_total);
+// Obtener sede actual
+$sede_id = obtenerSedeActual();
+
+// Obtener total de proveedores (filtrado por sede y con materiales)
+$query_total = "SELECT COUNT(DISTINCT p.id) as total 
+                FROM proveedores p
+                INNER JOIN materiales m ON p.id = m.proveedor_id
+                WHERE m.sede_id = :sede_id";
+$stmt_total = $db->prepare($query_total);
+$stmt_total->bindParam(':sede_id', $sede_id);
+$stmt_total->execute();
 $result_total = $stmt_total->fetch(PDO::FETCH_ASSOC);
 $total_proveedores = $result_total['total'];
 $total_paginas = ceil($total_proveedores / $registros_por_pagina);
 
-// Obtener proveedores paginados
+// Obtener proveedores paginados (filtrado por sede y con materiales)
 $query = "SELECT p.*, COUNT(m.id) as total_materiales 
           FROM proveedores p
-          LEFT JOIN materiales m ON p.id = m.proveedor_id
+          INNER JOIN materiales m ON p.id = m.proveedor_id
+          WHERE m.sede_id = :sede_id
           GROUP BY p.id
           ORDER BY p.nombre
           LIMIT :offset, :limit";
 $stmt = $db->prepare($query);
+$stmt->bindParam(':sede_id', $sede_id);
 $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 $stmt->bindParam(':limit', $registros_por_pagina, PDO::PARAM_INT);
 $stmt->execute();
@@ -191,7 +202,9 @@ include '../layouts/header.php';
                 <div class="d-flex justify-content-between">
                     <div>
                         <h6 class="card-title">Activos</h6>
-                        <h3><?php echo count(array_filter($proveedores, function($p) { return ($p['estado'] ?? 'activo') === 'activo'; })); ?></h3>
+                        <h3><?php echo count(array_filter($proveedores, function ($p) {
+                                return ($p['estado'] ?? 'activo') === 'activo';
+                            })); ?></h3>
                     </div>
                     <i class="bi bi-check-circle" style="font-size: 2.5rem; opacity: 0.7;"></i>
                 </div>
@@ -204,7 +217,9 @@ include '../layouts/header.php';
                 <div class="d-flex justify-content-between">
                     <div>
                         <h6 class="card-title">Con Materiales</h6>
-                        <h3><?php echo count(array_filter($proveedores, function($p) { return $p['total_materiales'] > 0; })); ?></h3>
+                        <h3><?php echo count(array_filter($proveedores, function ($p) {
+                                return $p['total_materiales'] > 0;
+                            })); ?></h3>
                     </div>
                     <i class="bi bi-box" style="font-size: 2.5rem; opacity: 0.7;"></i>
                 </div>
@@ -233,122 +248,122 @@ include '../layouts/header.php';
                     </thead>
                     <tbody>
                         <?php if (empty($proveedores)): ?>
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">No hay proveedores registrados</td>
-                        </tr>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No hay proveedores registrados</td>
+                            </tr>
                         <?php else: ?>
                             <?php foreach ($proveedores as $proveedor): ?>
-                            <tr>
-                                <td><strong><?php echo $proveedor['nombre']; ?></strong></td>
-                                <td><code><?php echo $proveedor['ruc']; ?></code></td>
-                                <td><?php echo $proveedor['email'] ?? '-'; ?></td>
-                                <td><?php echo $proveedor['telefono'] ?? '-'; ?></td>
-                                <td>
-                                    <span class="badge bg-info"><?php echo $proveedor['total_materiales']; ?></span>
-                                </td>
-                                <td>
-                                    <?php
-                                    $estado = $proveedor['estado'] ?? 'activo';
-                                    $badge_class = $estado === 'activo' ? 'bg-success' : 'bg-danger';
-                                    ?>
-                                    <span class="badge <?php echo $badge_class; ?>">
-                                        <?php echo ucfirst($estado); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                <tr>
+                                    <td><strong><?php echo $proveedor['nombre']; ?></strong></td>
+                                    <td><code><?php echo $proveedor['ruc']; ?></code></td>
+                                    <td><?php echo $proveedor['email'] ?? '-'; ?></td>
+                                    <td><?php echo $proveedor['telefono'] ?? '-'; ?></td>
+                                    <td>
+                                        <span class="badge bg-info"><?php echo $proveedor['total_materiales']; ?></span>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        $estado = $proveedor['estado'] ?? 'activo';
+                                        $badge_class = $estado === 'activo' ? 'bg-success' : 'bg-danger';
+                                        ?>
+                                        <span class="badge <?php echo $badge_class; ?>">
+                                            <?php echo ucfirst($estado); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
                                             data-bs-toggle="modal" data-bs-target="#modalEditarProveedor"
                                             onclick="cargarProveedor(<?php echo htmlspecialchars(json_encode($proveedor)); ?>)">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <?php if ($proveedor['total_materiales'] == 0): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            onclick="confirmarEliminar(<?php echo $proveedor['id']; ?>, '<?php echo $proveedor['nombre']; ?>')">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <?php if ($proveedor['total_materiales'] == 0): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                onclick="confirmarEliminar(<?php echo $proveedor['id']; ?>, '<?php echo $proveedor['nombre']; ?>')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
                 </table>
             </div>
-            
+
             <!-- Paginación -->
             <?php if ($total_paginas > 1): ?>
-            <nav aria-label="Paginación" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    <!-- Botón Primera Página -->
-                    <?php if ($pagina_actual > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?pagina=1">
-                            <i class="bi bi-chevron-double-left"></i> Primera
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                    
-                    <!-- Botón Página Anterior -->
-                    <?php if ($pagina_actual > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?pagina=<?php echo $pagina_actual - 1; ?>">
-                            <i class="bi bi-chevron-left"></i> Anterior
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                    
-                    <!-- Números de Página -->
-                    <?php
-                    $inicio = max(1, $pagina_actual - 2);
-                    $fin = min($total_paginas, $pagina_actual + 2);
-                    
-                    if ($inicio > 1): ?>
-                    <li class="page-item disabled">
-                        <span class="page-link">...</span>
-                    </li>
-                    <?php endif; ?>
-                    
-                    <?php for ($i = $inicio; $i <= $fin; $i++): ?>
-                    <li class="page-item <?php echo $i === $pagina_actual ? 'active' : ''; ?>">
-                        <a class="page-link" href="?pagina=<?php echo $i; ?>">
-                            <?php echo $i; ?>
-                        </a>
-                    </li>
-                    <?php endfor; ?>
-                    
-                    <?php if ($fin < $total_paginas): ?>
-                    <li class="page-item disabled">
-                        <span class="page-link">...</span>
-                    </li>
-                    <?php endif; ?>
-                    
-                    <!-- Botón Página Siguiente -->
-                    <?php if ($pagina_actual < $total_paginas): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?pagina=<?php echo $pagina_actual + 1; ?>">
-                            Siguiente <i class="bi bi-chevron-right"></i>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                    
-                    <!-- Botón Última Página -->
-                    <?php if ($pagina_actual < $total_paginas): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?pagina=<?php echo $total_paginas; ?>">
-                            Última <i class="bi bi-chevron-double-right"></i>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                </ul>
-            </nav>
-            
-            <!-- Información de Paginación -->
-            <div class="text-center text-muted mt-3">
-                <small>
-                    Mostrando <?php echo count($proveedores); ?> de <?php echo $total_proveedores; ?> proveedores 
-                    | Página <?php echo $pagina_actual; ?> de <?php echo $total_paginas; ?>
-                </small>
-            </div>
+                <nav aria-label="Paginación" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <!-- Botón Primera Página -->
+                        <?php if ($pagina_actual > 1): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=1">
+                                    <i class="bi bi-chevron-double-left"></i> Primera
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
+                        <!-- Botón Página Anterior -->
+                        <?php if ($pagina_actual > 1): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=<?php echo $pagina_actual - 1; ?>">
+                                    <i class="bi bi-chevron-left"></i> Anterior
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
+                        <!-- Números de Página -->
+                        <?php
+                        $inicio = max(1, $pagina_actual - 2);
+                        $fin = min($total_paginas, $pagina_actual + 2);
+
+                        if ($inicio > 1): ?>
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        <?php endif; ?>
+
+                        <?php for ($i = $inicio; $i <= $fin; $i++): ?>
+                            <li class="page-item <?php echo $i === $pagina_actual ? 'active' : ''; ?>">
+                                <a class="page-link" href="?pagina=<?php echo $i; ?>">
+                                    <?php echo $i; ?>
+                                </a>
+                            </li>
+                        <?php endfor; ?>
+
+                        <?php if ($fin < $total_paginas): ?>
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        <?php endif; ?>
+
+                        <!-- Botón Página Siguiente -->
+                        <?php if ($pagina_actual < $total_paginas): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=<?php echo $pagina_actual + 1; ?>">
+                                    Siguiente <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
+                        <!-- Botón Última Página -->
+                        <?php if ($pagina_actual < $total_paginas): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=<?php echo $total_paginas; ?>">
+                                    Última <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
+
+                <!-- Información de Paginación -->
+                <div class="text-center text-muted mt-3">
+                    <small>
+                        Mostrando <?php echo count($proveedores); ?> de <?php echo $total_proveedores; ?> proveedores
+                        | Página <?php echo $pagina_actual; ?> de <?php echo $total_paginas; ?>
+                    </small>
+                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -495,35 +510,37 @@ include '../layouts/header.php';
 </div>
 
 <style>
-.bg-gradient-info {
-    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-}
-.bg-gradient-success {
-    background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
-}
-.bg-gradient-warning {
-    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-}
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+    }
+
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+    }
 </style>
 
 <script>
-function cargarProveedor(proveedor) {
-    document.getElementById('edit_id').value = proveedor.id;
-    document.getElementById('edit_nombre').value = proveedor.nombre;
-    document.getElementById('edit_ruc').value = proveedor.ruc;
-    document.getElementById('edit_email').value = proveedor.email || '';
-    document.getElementById('edit_telefono').value = proveedor.telefono || '';
-    document.getElementById('edit_direccion').value = proveedor.direccion || '';
-    document.getElementById('edit_contacto').value = proveedor.contacto || '';
-    document.getElementById('edit_estado').value = proveedor.estado || 'activo';
-}
+    function cargarProveedor(proveedor) {
+        document.getElementById('edit_id').value = proveedor.id;
+        document.getElementById('edit_nombre').value = proveedor.nombre;
+        document.getElementById('edit_ruc').value = proveedor.ruc;
+        document.getElementById('edit_email').value = proveedor.email || '';
+        document.getElementById('edit_telefono').value = proveedor.telefono || '';
+        document.getElementById('edit_direccion').value = proveedor.direccion || '';
+        document.getElementById('edit_contacto').value = proveedor.contacto || '';
+        document.getElementById('edit_estado').value = proveedor.estado || 'activo';
+    }
 
-function confirmarEliminar(id, nombre) {
-    document.getElementById('delete_id').value = id;
-    document.getElementById('delete_nombre').textContent = nombre;
-    const modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
-    modal.show();
-}
+    function confirmarEliminar(id, nombre) {
+        document.getElementById('delete_id').value = id;
+        document.getElementById('delete_nombre').textContent = nombre;
+        const modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
+        modal.show();
+    }
 </script>
 
 <?php include '../layouts/footer.php'; ?>

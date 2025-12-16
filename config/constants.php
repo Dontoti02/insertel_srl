@@ -1,13 +1,19 @@
 <?php
+
 /**
  * Constantes del sistema
  * INSERTEL S.R.L.
  */
 
 // Configuración de la aplicación
-// APP_NAME se define dinámicamente desde la BD en functions.php
+define('APP_NAME', 'INSERTEL S.R.L.'); // Nombre por defecto, puede ser actualizado desde BD
 define('APP_VERSION', '1.0.0');
-define('BASE_URL', 'http://localhost/insertel/');
+// Detectar URL base dinámicamente (para soportar localhost y túneles como ngrok)
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+$host = $_SERVER['HTTP_HOST'];
+// Asegurar que termine en /
+define('BASE_URL', $protocol . $host . '/insertel/');
+define('ENVIRONMENT', 'development'); // development | production
 
 // Rutas del sistema
 define('ROOT_PATH', dirname(__DIR__));
@@ -53,6 +59,12 @@ define('CURRENCY_SYMBOL', 'S/');      // Símbolo de moneda (Soles)
 define('CURRENCY_CODE', 'PEN');       // Código ISO de moneda (Peruvian Nuevo Sol)
 define('CURRENCY_NAME', 'Soles');     // Nombre de la moneda
 define('DECIMAL_PLACES', 2);          // Decimales para precios
+
+// Configuración de Mailtrap (Email Service)
+// Token configurado y listo para usar
+define('MAILTRAP_API_TOKEN', '57046c07cceb24c9dd959618a9a7f717');  // ✅ CONFIGURADO
+define('MAILTRAP_FROM_EMAIL', 'noreply@insertel.com');
+define('MAILTRAP_FROM_NAME', 'INSERTEL S.R.L.');
 
 // Configuración de sesión
 // Solo aplicar ini_set si la sesión aún NO está activa, para evitar warnings

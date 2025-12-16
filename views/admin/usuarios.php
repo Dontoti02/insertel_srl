@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Gestión de Usuarios - Administrador
  */
@@ -19,7 +20,7 @@ $userModel = new User($db);
 // Procesar acciones
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
-    
+
     if ($accion === 'crear') {
         $userModel->username = sanitizar($_POST['username']);
         $userModel->password = $_POST['password'];
@@ -29,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $userModel->rol_id = (int)$_POST['rol_id'];
         $userModel->estado = $_POST['estado'];
         $userModel->sede_id = $_SESSION['sede_id']; // Asignar la sede del admin actual
-        
+
         if ($userModel->existeUsername($userModel->username)) {
             setMensaje('danger', 'El nombre de usuario ya existe');
         } else {
@@ -43,22 +44,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    
+
     if ($accion === 'editar') {
         $userModel->id = (int)$_POST['id'];
         $userModel->nombre_completo = sanitizar($_POST['nombre_completo']);
-        $userModel->email = sanitizar($_POST['email']);
+        // Obtener usuario actual para preservar el email (no editable)
+        $usuario_existente = $userModel->obtenerPorId($userModel->id);
+        $userModel->email = $usuario_existente['email']; // Mantener email original
+        // $userModel->email = sanitizar($_POST['email']); // COMENTADO POR SEGURIDAD
         $userModel->telefono = sanitizar($_POST['telefono']);
         $userModel->rol_id = (int)$_POST['rol_id'];
         $userModel->estado = $_POST['estado'];
-        
+
         // No permitir cambiar el rol de un SUPERADMIN
         $usuario_actual = $userModel->obtenerPorId($userModel->id);
         if ($usuario_actual && $usuario_actual['rol_id'] == ROL_SUPERADMIN) {
             setMensaje('danger', 'No se puede modificar el rol del Superadministrador');
             redirigir('views/admin/usuarios.php');
         }
-        
+
         // No permitir que el admin se desactive a sí mismo
         if ($userModel->id == $_SESSION['usuario_id'] && $userModel->estado == 'inactivo') {
             setMensaje('danger', 'No puedes desactivar tu propia cuenta');
@@ -72,10 +76,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    
+
     if ($accion === 'eliminar') {
         $user_id = (int)$_POST['id'];
-        
+
         // No permitir que el admin se elimine a sí mismo
         if ($user_id == $_SESSION['usuario_id']) {
             setMensaje('danger', 'No puedes eliminar tu propia cuenta');
@@ -86,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setMensaje('danger', 'No se puede eliminar un Superadministrador');
                 redirigir('views/admin/usuarios.php');
             }
-            
+
             if ($usuario_eliminar && $userModel->eliminar($user_id)) {
                 registrarActividad($_SESSION['usuario_id'], 'eliminar', 'usuarios', "Usuario eliminado: {$usuario_eliminar['username']}");
                 setMensaje('success', 'Usuario eliminado exitosamente');
@@ -153,9 +157,9 @@ include '../layouts/header.php';
                     <select name="rol_id" class="form-select">
                         <option value="">Todos los roles</option>
                         <?php foreach ($roles as $rol): ?>
-                        <option value="<?php echo $rol['id']; ?>" <?php echo (isset($_GET['rol_id']) && $_GET['rol_id'] == $rol['id']) ? 'selected' : ''; ?>>
-                            <?php echo $rol['nombre']; ?>
-                        </option>
+                            <option value="<?php echo $rol['id']; ?>" <?php echo (isset($_GET['rol_id']) && $_GET['rol_id'] == $rol['id']) ? 'selected' : ''; ?>>
+                                <?php echo $rol['nombre']; ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -199,35 +203,35 @@ include '../layouts/header.php';
                     </thead>
                     <tbody>
                         <?php if (empty($usuarios)): ?>
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
-                                No se encontraron usuarios
-                            </td>
-                        </tr>
-                        <?php else: ?>
-                            <?php foreach ($usuarios as $usuario): ?>
                             <tr>
-                                <td><strong><?php echo $usuario['username']; ?></strong></td>
-                                <td><?php echo $usuario['nombre_completo']; ?></td>
-                                <td><?php echo $usuario['email'] ?? '-'; ?></td>
-                                <td><span class="badge bg-primary"><?php echo $usuario['rol_nombre']; ?></span></td>
-                                <td>
-                                    <span class="badge bg-<?php echo getBadgeEstado($usuario['estado']); ?>">
-                                        <?php echo ucfirst($usuario['estado']); ?>
-                                    </span>
-                                </td>
-                                <td><?php echo $usuario['ultimo_acceso'] ? formatearFechaHora($usuario['ultimo_acceso']) : 'Nunca'; ?></td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="editarUsuario(<?php echo htmlspecialchars(json_encode($usuario)); ?>)">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <?php if ($usuario['id'] != $_SESSION['usuario_id']): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmarEliminar(<?php echo $usuario['id']; ?>, '<?php echo addslashes($usuario['username']); ?>')">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                    <?php endif; ?>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    No se encontraron usuarios
                                 </td>
                             </tr>
+                        <?php else: ?>
+                            <?php foreach ($usuarios as $usuario): ?>
+                                <tr>
+                                    <td><strong><?php echo $usuario['username']; ?></strong></td>
+                                    <td><?php echo $usuario['nombre_completo']; ?></td>
+                                    <td><?php echo $usuario['email'] ?? '-'; ?></td>
+                                    <td><span class="badge bg-primary"><?php echo $usuario['rol_nombre']; ?></span></td>
+                                    <td>
+                                        <span class="badge bg-<?php echo getBadgeEstado($usuario['estado']); ?>">
+                                            <?php echo ucfirst($usuario['estado']); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo $usuario['ultimo_acceso'] ? formatearFechaHora($usuario['ultimo_acceso']) : 'Nunca'; ?></td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="editarUsuario(<?php echo htmlspecialchars(json_encode($usuario)); ?>)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <?php if ($usuario['id'] != $_SESSION['usuario_id']): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmarEliminar(<?php echo $usuario['id']; ?>, '<?php echo addslashes($usuario['username']); ?>')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -273,7 +277,7 @@ include '../layouts/header.php';
                         <select name="rol_id" class="form-select" required>
                             <option value="">Seleccione...</option>
                             <?php foreach ($roles as $rol): ?>
-                            <option value="<?php echo $rol['id']; ?>"><?php echo $rol['nombre']; ?></option>
+                                <option value="<?php echo $rol['id']; ?>"><?php echo $rol['nombre']; ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -311,8 +315,8 @@ include '../layouts/header.php';
                         <input type="text" name="nombre_completo" id="edit_nombre_completo" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email" id="edit_email" class="form-control">
+                        <label class="form-label">Email <small class="text-muted">(No editable)</small></label>
+                        <input type="email" name="email" id="edit_email" class="form-control bg-light" readonly title="El correo electrónico no se puede modificar">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Teléfono</label>
@@ -322,7 +326,7 @@ include '../layouts/header.php';
                         <label class="form-label">Rol *</label>
                         <select name="rol_id" id="edit_rol_id" class="form-select" required>
                             <?php foreach ($roles as $rol): ?>
-                            <option value="<?php echo $rol['id']; ?>"><?php echo $rol['nombre']; ?></option>
+                                <option value="<?php echo $rol['id']; ?>"><?php echo $rol['nombre']; ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -374,25 +378,25 @@ include '../layouts/header.php';
 </div>
 
 <script>
-function editarUsuario(usuario) {
-    document.getElementById('edit_id').value = usuario.id;
-    document.getElementById('edit_nombre_completo').value = usuario.nombre_completo;
-    document.getElementById('edit_email').value = usuario.email || '';
-    document.getElementById('edit_telefono').value = usuario.telefono || '';
-    document.getElementById('edit_rol_id').value = usuario.rol_id;
-    document.getElementById('edit_estado').value = usuario.estado;
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
-    modal.show();
-}
+    function editarUsuario(usuario) {
+        document.getElementById('edit_id').value = usuario.id;
+        document.getElementById('edit_nombre_completo').value = usuario.nombre_completo;
+        document.getElementById('edit_email').value = usuario.email || '';
+        document.getElementById('edit_telefono').value = usuario.telefono || '';
+        document.getElementById('edit_rol_id').value = usuario.rol_id;
+        document.getElementById('edit_estado').value = usuario.estado;
 
-function confirmarEliminar(userId, username) {
-    document.getElementById('delete_id').value = userId;
-    document.getElementById('delete_username').textContent = username;
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalEliminarUsuario'));
-    modal.show();
-}
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
+        modal.show();
+    }
+
+    function confirmarEliminar(userId, username) {
+        document.getElementById('delete_id').value = userId;
+        document.getElementById('delete_username').textContent = username;
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEliminarUsuario'));
+        modal.show();
+    }
 </script>
 
 <?php include '../layouts/footer.php'; ?>

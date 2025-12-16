@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Actas Técnicas de Tecnicos - Jefe de Almacén
  * Visualizar todas las actas registradas por los técnicos
@@ -189,9 +190,9 @@ include '../layouts/header.php';
                     <select name="tecnico" class="form-select">
                         <option value="">Todos los técnicos</option>
                         <?php foreach ($tecnicos as $tec): ?>
-                        <option value="<?php echo $tec['id']; ?>" <?php echo $filtro_tecnico == $tec['id'] ? 'selected' : ''; ?>>
-                            <?php echo $tec['nombre_completo']; ?>
-                        </option>
+                            <option value="<?php echo $tec['id']; ?>" <?php echo $filtro_tecnico == $tec['id'] ? 'selected' : ''; ?>>
+                                <?php echo $tec['nombre_completo']; ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -246,105 +247,124 @@ include '../layouts/header.php';
                     </thead>
                     <tbody>
                         <?php if (empty($actas)): ?>
-                        <tr>
-                            <td colspan="8" class="text-center text-muted py-4">No hay actas registradas</td>
-                        </tr>
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No hay actas registradas</td>
+                            </tr>
                         <?php else: ?>
                             <?php foreach ($actas as $acta): ?>
-                            <tr>
-                                <td><strong><?php echo $acta['codigo_acta']; ?></strong></td>
-                                <td><?php echo formatearFecha($acta['fecha_servicio']); ?></td>
-                                <td><?php echo $acta['tecnico_nombre']; ?></td>
-                                <td><?php echo $acta['cliente']; ?></td>
-                                <td><?php echo ucfirst($acta['tipo_servicio']); ?></td>
-                                <td><?php echo substr($acta['direccion_servicio'], 0, 30) . '...'; ?></td>
-                                <td>
-                                    <?php
-                                    $badge_class = match($acta['estado']) {
-                                        'finalizada' => 'bg-success',
-                                        'pendiente' => 'bg-warning',
-                                        'cancelada' => 'bg-danger',
-                                        default => 'bg-secondary'
-                                    };
-                                    ?>
-                                    <span class="badge <?php echo $badge_class; ?>">
-                                        <?php echo ucfirst($acta['estado']); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#modalDetalles<?php echo $acta['id']; ?>">
-                                        <i class="bi bi-eye me-1"></i>Ver
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalEliminarActa" data-acta-id="<?php echo $acta['id']; ?>" data-codigo-acta="<?php echo $acta['codigo_acta']; ?>">
-                                        <i class="bi bi-trash me-1"></i>Eliminar
-                                    </button>
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td><strong><?php echo $acta['codigo_acta']; ?></strong></td>
+                                    <td><?php echo formatearFecha($acta['fecha_servicio']); ?></td>
+                                    <td><?php echo $acta['tecnico_nombre']; ?></td>
+                                    <td><?php echo $acta['cliente']; ?></td>
+                                    <td><?php echo ucfirst($acta['tipo_servicio']); ?></td>
+                                    <td><?php echo substr($acta['direccion_servicio'], 0, 30) . '...'; ?></td>
+                                    <td>
+                                        <?php
+                                        $badge_class = match ($acta['estado']) {
+                                            'finalizada' => 'bg-success',
+                                            'pendiente' => 'bg-warning',
+                                            'cancelada' => 'bg-danger',
+                                            default => 'bg-secondary'
+                                        };
+                                        ?>
+                                        <span class="badge <?php echo $badge_class; ?>">
+                                            <?php echo ucfirst($acta['estado']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#modalDetalles<?php echo $acta['id']; ?>">
+                                            <i class="bi bi-eye me-1"></i>Ver
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalEliminarActa" data-acta-id="<?php echo $acta['id']; ?>" data-codigo-acta="<?php echo $acta['codigo_acta']; ?>">
+                                            <i class="bi bi-trash me-1"></i>Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
 
-                            <!-- Modal Detalles -->
-                            <div class="modal fade" id="modalDetalles<?php echo $acta['id']; ?>" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-lg">
-                                    <div class="modal-content">
-                                        <div class="modal-header bg-primary text-white">
-                                            <h5 class="modal-title">
-                                                <i class="bi bi-file-text me-2"></i><?php echo $acta['codigo_acta']; ?>
-                                            </h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label"><strong>Técnico:</strong></label>
-                                                    <p><?php echo $acta['tecnico_nombre']; ?></p>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label"><strong>Fecha de Servicio:</strong></label>
-                                                    <p><?php echo formatearFecha($acta['fecha_servicio']); ?></p>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label"><strong>Cliente:</strong></label>
-                                                    <p><?php echo $acta['cliente']; ?></p>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label"><strong>Tipo de Servicio:</strong></label>
-                                                    <p><?php echo ucfirst($acta['tipo_servicio']); ?></p>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label"><strong>Dirección:</strong></label>
-                                                    <p><?php echo $acta['direccion_servicio']; ?></p>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label"><strong>Descripción del Trabajo:</strong></label>
-                                                    <p><?php echo nl2br($acta['descripcion_trabajo']); ?></p>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label"><strong>Materiales Utilizados:</strong></label>
-                                                    <p><?php echo nl2br($acta['materiales_utilizados'] ?? 'N/A'); ?></p>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label"><strong>Observaciones:</strong></label>
-                                                    <p><?php echo nl2br($acta['observaciones'] ?? 'N/A'); ?></p>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label"><strong>Estado:</strong></label>
-                                                    <p>
-                                                        <span class="badge <?php echo $badge_class; ?>">
-                                                            <?php echo ucfirst($acta['estado']); ?>
-                                                        </span>
-                                                    </p>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label"><strong>Fecha de Registro:</strong></label>
-                                                    <p><?php echo formatearFecha($acta['fecha_creacion'] ?? $acta['created_at']); ?></p>
+                                <!-- Modal Detalles -->
+                                <div class="modal fade" id="modalDetalles<?php echo $acta['id']; ?>" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-primary text-white">
+                                                <h5 class="modal-title">
+                                                    <i class="bi bi-file-text me-2"></i><?php echo $acta['codigo_acta']; ?>
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label"><strong>Técnico:</strong></label>
+                                                        <p><?php echo $acta['tecnico_nombre']; ?></p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label"><strong>Fecha de Servicio:</strong></label>
+                                                        <p><?php echo formatearFecha($acta['fecha_servicio']); ?></p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label"><strong>Cliente:</strong></label>
+                                                        <p><?php echo $acta['cliente']; ?></p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label"><strong>Tipo de Servicio:</strong></label>
+                                                        <p><?php echo ucfirst($acta['tipo_servicio']); ?></p>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label"><strong>Dirección:</strong></label>
+                                                        <p><?php echo $acta['direccion_servicio']; ?></p>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label"><strong>Descripción del Trabajo:</strong></label>
+                                                        <p><?php echo nl2br($acta['descripcion_trabajo']); ?></p>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label"><strong>Materiales Utilizados:</strong></label>
+                                                        <p><?php echo nl2br($acta['materiales_utilizados'] ?? 'N/A'); ?></p>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label"><strong>Observaciones:</strong></label>
+                                                        <p><?php echo nl2br($acta['observaciones'] ?? 'N/A'); ?></p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label"><strong>Estado:</strong></label>
+                                                        <p>
+                                                            <span class="badge <?php echo $badge_class; ?>">
+                                                                <?php echo ucfirst($acta['estado']); ?>
+                                                            </span>
+                                                        </p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label"><strong>Fecha de Registro:</strong></label>
+                                                        <p><?php echo formatearFecha($acta['fecha_creacion'] ?? $acta['created_at']); ?></p>
+                                                    </div>
+
+                                                    <?php if (!empty($acta['foto_acta'])): ?>
+                                                        <div class="col-12">
+                                                            <label class="form-label"><strong>Foto del Acta:</strong></label>
+                                                            <div class="text-center mt-2">
+                                                                <img src="<?php echo BASE_URL . 'uploads/actas/' . $acta['foto_acta']; ?>"
+                                                                    class="img-fluid rounded border shadow-sm"
+                                                                    style="max-height: 400px;"
+                                                                    alt="Foto del Acta">
+                                                                <div class="mt-2">
+                                                                    <a href="<?php echo BASE_URL . 'uploads/actas/' . $acta['foto_acta']; ?>"
+                                                                        target="_blank"
+                                                                        class="btn btn-sm btn-outline-primary">
+                                                                        <i class="bi bi-arrows-fullscreen me-1"></i>Ver Imagen Completa
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -353,53 +373,56 @@ include '../layouts/header.php';
 
             <!-- Paginación -->
             <?php if ($total_paginas > 1): ?>
-            <nav class="mt-4">
-                <ul class="pagination justify-content-center">
-                    <?php if ($pagina > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?pagina=1&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">Primera</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?pagina=<?php echo $pagina - 1; ?>&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">Anterior</a>
-                    </li>
-                    <?php endif; ?>
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <?php if ($pagina > 1): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=1&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">Primera</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=<?php echo $pagina - 1; ?>&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">Anterior</a>
+                            </li>
+                        <?php endif; ?>
 
-                    <?php for ($i = max(1, $pagina - 2); $i <= min($total_paginas, $pagina + 2); $i++): ?>
-                    <li class="page-item <?php echo $i === $pagina ? 'active' : ''; ?>">
-                        <a class="page-link" href="?pagina=<?php echo $i; ?>&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">
-                            <?php echo $i; ?>
-                        </a>
-                    </li>
-                    <?php endfor; ?>
+                        <?php for ($i = max(1, $pagina - 2); $i <= min($total_paginas, $pagina + 2); $i++): ?>
+                            <li class="page-item <?php echo $i === $pagina ? 'active' : ''; ?>">
+                                <a class="page-link" href="?pagina=<?php echo $i; ?>&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">
+                                    <?php echo $i; ?>
+                                </a>
+                            </li>
+                        <?php endfor; ?>
 
-                    <?php if ($pagina < $total_paginas): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?pagina=<?php echo $pagina + 1; ?>&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">Siguiente</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?pagina=<?php echo $total_paginas; ?>&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">Última</a>
-                    </li>
-                    <?php endif; ?>
-                </ul>
-            </nav>
+                        <?php if ($pagina < $total_paginas): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=<?php echo $pagina + 1; ?>&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">Siguiente</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=<?php echo $total_paginas; ?>&tecnico=<?php echo $filtro_tecnico; ?>&estado=<?php echo $filtro_estado; ?>&fecha_desde=<?php echo $filtro_fecha_desde; ?>&fecha_hasta=<?php echo $filtro_fecha_hasta; ?>">Última</a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
             <?php endif; ?>
         </div>
     </div>
 </div>
 
 <style>
-.bg-gradient-info {
-    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-}
-.bg-gradient-success {
-    background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
-}
-.bg-gradient-warning {
-    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-}
-.bg-gradient-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+    }
+
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+    }
+
+    .bg-gradient-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
 </style>
 
 <!-- Modal Eliminar Acta -->
@@ -427,21 +450,21 @@ include '../layouts/header.php';
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var modalEliminar = document.getElementById('modalEliminarActa');
-    modalEliminar.addEventListener('show.bs.modal', function (event) {
-        var button = event.relatedTarget;
-        var actaId = button.getAttribute('data-acta-id');
-        var codigoActa = button.getAttribute('data-codigo-acta');
+    document.addEventListener('DOMContentLoaded', function() {
+        var modalEliminar = document.getElementById('modalEliminarActa');
+        modalEliminar.addEventListener('show.bs.modal', function(event) {
+            var button = event.relatedTarget;
+            var actaId = button.getAttribute('data-acta-id');
+            var codigoActa = button.getAttribute('data-codigo-acta');
 
-        var modalTitle = modalEliminar.querySelector('.modal-title');
-        var actaIdInput = modalEliminar.querySelector('#eliminar_acta_id');
-        var codigoActaSpan = modalEliminar.querySelector('#codigo_acta_eliminar');
+            var modalTitle = modalEliminar.querySelector('.modal-title');
+            var actaIdInput = modalEliminar.querySelector('#eliminar_acta_id');
+            var codigoActaSpan = modalEliminar.querySelector('#codigo_acta_eliminar');
 
-        actaIdInput.value = actaId;
-        codigoActaSpan.textContent = codigoActa;
+            actaIdInput.value = actaId;
+            codigoActaSpan.textContent = codigoActa;
+        });
     });
-});
 </script>
 
 <?php include '../layouts/footer.php'; ?>
